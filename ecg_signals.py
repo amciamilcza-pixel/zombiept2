@@ -40,7 +40,7 @@ the requested SNR relative to the clean ECG.
 
   !! CHANGE NOISE_DIR BELOW to the folder containing bw/em/ma files !!
 
-add_apocalypse_noise() is kept as a synthetic fallback in case the
+add_noise() is kept as a synthetic fallback in case the
 real noise files are unavailable.
 """
 
@@ -323,7 +323,7 @@ def add_real_noise(ecg, fs=500, snr_db=5, seed=99,
                 Defaults to NOISE_DIR (set at module top).
     weights   : mixing weights for (bw, em, ma) — must sum ≤ 1
 
-    Falls back to add_apocalypse_noise() if the noise files are not found.
+    Falls back to add_noise() if the noise files are not found.
     """
     if noise_dir is None:
         noise_dir = NOISE_DIR
@@ -342,7 +342,7 @@ def add_real_noise(ecg, fs=500, snr_db=5, seed=99,
               f"({noise_dir}).\n"
               "     Falling back to synthetic noise.\n"
               "     Set NOISE_DIR in ecg_signals.py or pass noise_dir=...")
-        return add_apocalypse_noise(ecg, fs=fs, snr_db=snr_db, seed=seed)
+        return add_noise(ecg, fs=fs, snr_db=snr_db, seed=seed)
 
     w_bw, w_em, w_ma = weights
     mixed_noise = w_bw * bw_n + w_em * em_n + w_ma * ma_n
@@ -359,7 +359,7 @@ def add_real_noise(ecg, fs=500, snr_db=5, seed=99,
     return ecg + mixed_noise + hum
 
 
-def add_apocalypse_noise(ecg, fs=500, snr_db=5, seed=99):
+def add_noise(ecg, fs=500, snr_db=5, seed=99):
     """
     Add three layers of apocalypse noise ON TOP of the real ECG signal.
 

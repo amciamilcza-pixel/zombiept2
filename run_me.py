@@ -71,9 +71,9 @@ print("=" * 60)
 from ecg_signals  import (generate_normal, generate_bradycardia,
                            generate_arrhythmia, add_real_noise,
                            load_all_interesting_cases, NOISE_DIR)
-from dft_filter   import recover_ecg, heart_rate_from_dft
-from stress_tests import (test_window_sensitivity, test_noise_robustness,
-                           test_failure_cases)
+from dft_filter   import recover_ecg, heart_rate_dft
+from stress_tests import (window_sensitivity, noise_robustness,
+                           failure_cases)
 from plots        import (plot_three_hearts, plot_recovery_pipeline,
                            plot_window_sensitivity, plot_noise_robustness,
                            plot_failure_cases, plot_interesting_cases)
@@ -203,9 +203,9 @@ signals_clean = {
     "arrhythmia":  ecg_arrhythmia,
 }
 
-print(f"   Normal       BPM (DFT): {heart_rate_from_dft(ecg_normal, FS):.1f}")
-print(f"   Bradycardia  BPM (DFT): {heart_rate_from_dft(ecg_bradycardia, FS):.1f}")
-print(f"   Arrhythmia   BPM (DFT): {heart_rate_from_dft(ecg_arrhythmia, FS):.1f}")
+print(f"   Normal       BPM (DFT): {heart_rate_dft(ecg_normal, FS):.1f}")
+print(f"   Bradycardia  BPM (DFT): {heart_rate_dft(ecg_bradycardia, FS):.1f}")
+print(f"   Arrhythmia   BPM (DFT): {heart_rate_dft(ecg_arrhythmia, FS):.1f}")
 
 plot_three_hearts(t, signals_clean, FS)
 
@@ -227,9 +227,9 @@ for label, ecg_clean, color_key in [
     # ── DFT recovery ─────────────────────────────────────────────────────────
     recovered, X_noisy, X_recovered, freqs = recover_ecg(noisy, FS)
 
-    print(f"   {label:15s}  clean BPM={heart_rate_from_dft(ecg_clean,  FS):.1f}  "
-          f"noisy BPM={heart_rate_from_dft(noisy,     FS):.1f}  "
-          f"recovered BPM={heart_rate_from_dft(recovered, FS):.1f}")
+    print(f"   {label:15s}  clean BPM={heart_rate_dft(ecg_clean,  FS):.1f}  "
+          f"noisy BPM={heart_rate_dft(noisy,     FS):.1f}  "
+          f"recovered BPM={heart_rate_dft(recovered, FS):.1f}")
 
     # ── recovery pipeline plot ────────────────────────────────────────────────
     plot_recovery_pipeline(t, ecg_clean, noisy, recovered,
@@ -246,7 +246,7 @@ for label, ecg_clean, color_key in [
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[3/6] Stress test 1 -- parameter sensitivity (window length) ...")
 t0 = time.time()
-ws_data = test_window_sensitivity(fs=FS, duration=DURATION)
+ws_data = window_sensitivity(fs=FS, duration=DURATION)
 plot_window_sensitivity(ws_data)
 print(f"   Window sizes : {ws_data['window_sizes']}")
 print(f"   BPM estimates: {[f'{b:.1f}' for b in ws_data['hr_estimates']]}")
@@ -257,7 +257,7 @@ print(f"   ({time.time()-t0:.1f}s)")
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[4/6] Stress test 2 -- noise robustness (SNR sweep) ...  ", end="", flush=True)
 t0 = time.time()
-nr_data = test_noise_robustness(fs=FS, duration=DURATION)
+nr_data = noise_robustness(fs=FS, duration=DURATION)
 plot_noise_robustness(nr_data)
 print(f"done  ({time.time()-t0:.1f}s)")
 for name, d in nr_data.items():
@@ -271,7 +271,7 @@ for name, d in nr_data.items():
 # SECTION 5 — Stress test 3: failure cases
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[5/6] Stress test 3 -- failure cases ...")
-fc_data = test_failure_cases(fs=FS)
+fc_data = failure_cases(fs=FS)
 plot_failure_cases(fc_data)
 
 # ─────────────────────────────────────────────────────────────────────────────

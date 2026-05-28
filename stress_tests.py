@@ -12,7 +12,7 @@ Each function returns data ready for plotting by run_me.py.
 """
 
 import numpy as np
-from ecg_signals import generate_normal, generate_arrhythmia, add_apocalypse_noise
+from ecg_signals import generate_normal, generate_arrhythmia, add_noise
 from dft_filter import heart_rate_from_dft, spectral_magnitude, dft_bandpass
 
 
@@ -84,7 +84,7 @@ def test_noise_robustness(fs=500, duration=10.0, n_trials=8):
             # Average over multiple noise seeds for stable estimates
             hrs = []
             for seed in range(n_trials):
-                noisy = add_apocalypse_noise(ecg_clean, fs, snr_db=snr, seed=seed*17)
+                noisy = add_noise(ecg_clean, fs, snr_db=snr, seed=seed*17)
                 # Apply bandpass before BPM estimation
                 recovered, _, _ = dft_bandpass(noisy, fs, f_low=0.5, f_high=45.0)
                 hrs.append(heart_rate_from_dft(recovered, fs))

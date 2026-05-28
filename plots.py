@@ -260,33 +260,12 @@ def plot_noise_robustness(results):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def plot_failure_cases(data):
-    leak = data["leakage"]
     ns   = data["nonstationarity"]
 
     fig = plt.figure(figsize=(14, 10))
-    fig.suptitle("☣  STRESS TEST 3 — DFT Failure Cases",
+    fig.suptitle("STRESS TEST 3 — DFT Failure Cases",
                  fontsize=12, color=COLORS["accent"])
     gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.5, wspace=0.35)
-
-    # ── A1: time segment with leakage ────────────────────────────────────────
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax1.plot(leak["t_seg"], leak["seg"], color=COLORS["normal"], lw=1.2)
-    ax1.set_title(f"Failure A: Short segment  (N={leak['N']})\n"
-                  "Non-integer periods → leakage",
-                  fontsize=9, color=COLORS["normal"])
-    ax1.set_xlabel("Time (s)"); ax1.set_ylabel("Amplitude"); ax1.grid(True)
-
-    # ── A2: leakage comparison ────────────────────────────────────────────────
-    ax2 = fig.add_subplot(gs[0, 1])
-    mask = leak["freqs"] <= 8
-    ax2.plot(leak["freqs"][mask], leak["mag_rect"][mask],
-             color="#ff3333", lw=1.2, alpha=0.85, label="Rectangular window")
-    ax2.plot(leak["freqs"][mask], leak["mag_hann"][mask],
-             color=COLORS["recovered"], lw=1.2, label="Hann window")
-    ax2.set_title("Spectral leakage: rectangular vs Hann window",
-                  fontsize=9, color=COLORS["recovered"])
-    ax2.set_xlabel("Freq (Hz)"); ax2.set_ylabel("|X(f)|")
-    ax2.legend(fontsize=8, facecolor="#1a1a1a"); ax2.grid(True)
 
     # ── B1: global DFT of arrhythmia ─────────────────────────────────────────
     ax3 = fig.add_subplot(gs[1, 0])

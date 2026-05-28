@@ -16,7 +16,7 @@ dft_bandpass        : zero DFT bins outside [f_low, f_high], then IDFT
 dft_notch           : zero DFT bins around a specific frequency
 recover_ecg         : full pipeline: notch + bandpass + inverse DFT
 spectral_magnitude  : one-sided magnitude spectrum
-heart_rate_from_dft : find fundamental frequency peak → BPM
+heart_rate_dft : find fundamental frequency peak → BPM
 """
 
 import numpy as np
@@ -95,7 +95,7 @@ def recover_ecg(noisy_signal, fs, f_low=0.5, f_high=45.0, notch_hz=50.0):
     return recovered, X_noisy, X_rec, freqs
 
 
-def heart_rate_from_dft(signal, fs, search_band=(0.4, 3.5)):
+def heart_rate_dft(signal, fs, search_band=(0.4, 3.5)):
     """
     Estimate heart rate (BPM) from the DFT by finding the FUNDAMENTAL
     frequency — the lowest significant spectral peak in the cardiac band.

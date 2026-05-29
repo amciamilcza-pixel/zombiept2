@@ -1,72 +1,45 @@
-# zombiept2
-# Zombie Apocalypse ECG — DFT Signal Recovery Project
-
-This project demonstrates how the Discrete Fourier Transform (DFT) can be used to analyse, corrupt, recover, and sonify ECG signals in a “zombie apocalypse” scenario.
-
-The project uses real ECG recordings from the MIT-BIH Arrhythmia Database and applies DFT-based filtering to recover heart signals after noise corruption. It compares different heart types, including a normal heart, a weak/inverted bradycardia signal, and an irregular “zombie” arrhythmia signal.
-
 ## Project idea
 
-The goal of the project is to show that the DFT is not only useful for visualising frequencies, but can also be used as an actual signal-processing tool.
+This project demonstrates how the Discrete Fourier Transform (DFT) can be used to analyse, recover and sonify ECG signals in a “zombie apocalypse” scenario.
+The goal of the project is to show that the DFT is not only useful for visualising frequencies but can also be used as an actual signal-processing tool.
 
 The project:
+- loads ECG recordings,
+- adds realistic physiological noise,
+- removes unwanted frequency components using DFT filtering,
+- estimates heart rate from the frequency spectrum,
+- shows limitations of DFT analysis,
+- generates plots
 
-* loads real ECG recordings,
-* adds realistic physiological noise,
-* removes unwanted frequency components using DFT filtering,
-* estimates heart rate from the frequency spectrum,
-* shows limitations of DFT analysis,
-* generates plots and audio files for presentation/video use.
+## Notes
+
+The project is intended as a Signals and Systems demonstration. It is not a medical diagnostic tool.
+
+The “zombie” and “infected” labels are creative presentation labels. The underlying ECG recordings are real clinical ECG signals from the MIT-BIH Arrhythmia Database but the story interpretation is fictional.
 
 ## Data used
 
-The ECG signals are taken from the MIT-BIH Arrhythmia Database.
-
+The ECG signals are taken from the MIT-BIH arrhythmia Database.
 The main records used are:
+- `100` — healthy, normal sinus rhythm 
+- `119` — zombie, inverted and reduced in amplitude to represent a weak “dying” heart (bradycardia)
+- `203` — infected stage, irregular rhythm (arrhythmia)
 
-* `100` — normal sinus rhythm, used as the healthy survivor baseline;
-* `119` — bradycardia/conduction abnormality, inverted and reduced in amplitude to represent a weak “dying” heart;
-* `203` — irregular arrhythmia, used as the chaotic “zombie” heart.
-
-Additional records are loaded for comparison and failure-case analysis, including records such as `116`, `118`, `122`, `200`, and `207`.
+Additional records are loaded for comparison and failure-case analysis, including records: `116`, `118`, `122`, `200`, `207`
 
 ## Noise used
 
 The main recovery pipeline uses real noise recordings from the MIT-BIH Noise Stress Test Database.
 
 The real noise components are:
-
-* `bw` — baseline wander;
-* `em` — electrode motion artifact;
-* `ma` — muscle artifact.
-
+- `bw` — baseline wander
+- `em` — electrode motion artifact
+- `ma` — muscle artifact
 These noise signals are mixed with the clean ECG and scaled to a chosen signal-to-noise ratio.
 
 A synthetic 50 Hz power-line hum is also added to demonstrate how a DFT notch filter can remove a precise unwanted frequency.
 
 If the real noise database files are not available, the code falls back to synthetic noise generated in Python. The separate noise robustness stress test also uses synthetic noise to test performance across different SNR levels.
-
-## Repository structure
-
-```text
-zombiept2/
-│
-├── run_me.py
-├── ecg_signals.py
-├── dft_filter.py
-├── plots.py
-├── stress_tests.py
-├── README.md
-│
-├── mitdb/
-│   └── MIT-BIH Arrhythmia Database files
-│
-├── nstdb/
-│   └── MIT-BIH Noise Stress Test Database files
-│
-└── figures/
-    └── generated plots and audio files
-```
 
 ## File explanations
 
@@ -106,16 +79,6 @@ It contains functions for:
 * adding real NSTDB noise;
 * adding synthetic fallback noise.
 
-Main functions include:
-
-```python
-generate_normal()
-generate_bradycardia()
-generate_arrhythmia()
-load_all_interesting_cases()
-add_real_noise()
-add_noise()
-```
 
 ### `dft_filter.py`
 
@@ -228,15 +191,13 @@ audio_arrhythmia_recovered.wav
 The DFT converts the ECG signal from the time domain into the frequency domain. This makes it possible to identify which frequency components belong to the heartbeat and which components are likely noise.
 
 The recovery process works as follows:
+1. Compute the DFT of the noisy ECG
+2. Remove the 50 Hz power-line hum using a notch filter
+3. Keep only the main ECG frequency range using a bandpass filter
+4. Use the inverse DFT to reconstruct the cleaned ECG signal
+5. Estimate BPM from the fundamental frequency peak in the DFT spectrum
 
-1. Compute the DFT of the noisy ECG.
-2. Remove the 50 Hz power-line hum using a notch filter.
-3. Keep only the main ECG frequency range using a bandpass filter.
-4. Use the inverse DFT to reconstruct the cleaned ECG signal.
-5. Estimate BPM from the fundamental frequency peak in the DFT spectrum.
+## License
 
-## Notes
-
-The project is intended as a Signals and Systems demonstration. It is not a medical diagnostic tool.
-
-The “zombie” and “dying heart” labels are creative presentation labels. The underlying ECG recordings are real clinical ECG signals from the MIT-BIH Arrhythmia Database, but the story interpretation is fictional.
+This project is for educational purposes.
+MIT-BIH datasets belong to PhysioNet: https://physionet.org/

@@ -1,8 +1,3 @@
-"""
-dft_filter.py
-DFT-based ECG filtering and heart-rate estimation.
-"""
-
 import numpy as np
 
 

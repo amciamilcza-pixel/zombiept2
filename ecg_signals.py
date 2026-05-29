@@ -48,7 +48,7 @@ def generate_bradycardia(duration=10.0):
     It is inverted and reduced in amplitude for the zombie effect.
     """
     t, sig, _ = _load_record("119", duration=duration)
-    return t, -0.5 * sig
+    return t, -sig
 
 
 def generate_arrhythmia(duration=10.0):

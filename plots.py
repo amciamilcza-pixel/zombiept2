@@ -151,13 +151,7 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
 
     # Visual explanation regions. These are explanatory annotations; the exact
     # recovery parameters are implemented in dft_filter.py.
-    ax.axvspan(0.5, 40, color=COLORS["normal"], alpha=0.08,
-               label="ECG band kept")
-    ax.axvline(50, color=COLORS["bradycardia"], lw=1.2, linestyle="--",
-               label="50 Hz hum removed")
 
-    ax.text(50.8, 0.92, "50 Hz\nnotch", color=COLORS["bradycardia"], fontsize=8,
-            va="top")
     ax.text(2, 0.72, "main ECG frequency content", color=COLORS["normal"], fontsize=8)
 
     ax.set_title(f"Example signal: {LABELS.get(example_label, example_label)}",

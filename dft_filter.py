@@ -27,25 +27,12 @@ def dft_bandpass(signal, fs, f_low=0.5, f_high=45.0):
     return filtered, X_filtered, freqs
 
 
-def dft_notch(signal, fs, f_notch=50.0, bandwidth=2.0):
+def recover_ecg(noisy_signal, fs, f_low=0.5, f_high=45.0):
     """
-    Remove frequencies around f_notch, for example 50 Hz power-line hum.
+    Recover ECG by keeping only the main ECG frequency band using the DFT.
+    Frequencies below f_low and above f_high are removed.
     """
-    X = np.fft.fft(signal)
-    freqs = np.fft.fftfreq(len(signal), d=1/fs)
-
-    notch_mask = np.abs(np.abs(freqs) - f_notch) < bandwidth / 2
-    X[notch_mask] = 0
-
-    return np.fft.ifft(X).real
-
-
-def recover_ecg(noisy_signal, fs, f_low=0.5, f_high=45.0, notch_hz=50.0):
-    """
-    Recover ECG by first removing 50 Hz hum, then applying a DFT bandpass.
-    """
-    after_notch = dft_notch(noisy_signal, fs, f_notch=notch_hz)
-    recovered, X_recovered, freqs = dft_bandpass(after_notch, fs, f_low, f_high)
+    recovered, X_recovered, freqs = dft_bandpass(noisy_signal, fs, f_low, f_high)
 
     X_noisy = np.fft.fft(noisy_signal)
 

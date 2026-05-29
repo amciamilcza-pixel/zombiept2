@@ -20,7 +20,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")  # safe backend; saves figures without needing a display
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 # ── global style ──────────────────────────────────────────────────────────────
 plt.rcParams.update({
@@ -159,7 +158,7 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
 
     ax.text(50.8, 0.92, "50 Hz\nnotch", color=COLORS["bradycardia"], fontsize=8,
             va="top")
-    ax.text(2, 0.12, "main ECG frequency content", color=COLORS["normal"], fontsize=8)
+    ax.text(2, 0.72, "main ECG frequency content", color=COLORS["normal"], fontsize=8)
 
     ax.set_title(f"Example signal: {LABELS.get(example_label, example_label)}",
                  fontsize=10, color=COLORS.get(example_label, COLORS["accent"]))
@@ -304,70 +303,4 @@ def plot_dft_failure_case(failure_data):
     return fig
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Backward-compatible wrappers
-# These prevent older run_me.py versions from crashing, but the new run_me.py
-# below uses the four cleaner plotting functions above.
-# ─────────────────────────────────────────────────────────────────────────────
 
-def plot_three_hearts(t, signals, fs, title_suffix=""):
-    """Old name kept only for compatibility. Prefer plot_main_noisy_vs_recovered."""
-    fig = plt.figure(figsize=(14, 9))
-    fig.suptitle(f"☣  ECG CLEAN SIGNALS — Three Cardiac Signatures {title_suffix}",
-                 fontsize=13, color=COLORS["accent"], y=0.98)
-    gs = gridspec.GridSpec(3, 2, figure=fig, hspace=0.55, wspace=0.35)
-
-    for row, key in enumerate(ORDER):
-        sig = signals[key]
-        color = COLORS[key]
-        ax_t = fig.add_subplot(gs[row, 0])
-        ax_t.plot(t[:int(5 * fs)], sig[:int(5 * fs)], color=color, lw=1.2)
-        ax_t.set_title(f"{LABELS[key]} — clean time domain", fontsize=9, color=color)
-        ax_t.set_xlabel("Time (s)"); ax_t.set_ylabel("Amplitude"); ax_t.grid(True)
-
-        f_pos, mag = _one_sided_spectrum(sig, fs)
-        mask = f_pos <= 10
-        ax_f = fig.add_subplot(gs[row, 1])
-        ax_f.plot(f_pos[mask], mag[mask], color=color, lw=1.2)
-        ax_f.set_title(f"{LABELS[key]} — DFT magnitude", fontsize=9, color=color)
-        ax_f.set_xlabel("Frequency (Hz)"); ax_f.set_ylabel("|X(f)|"); ax_f.grid(True)
-
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
-    _save(fig, "fig_unused_clean_signals.png")
-    return fig
-
-
-def plot_recovery_pipeline(*args, **kwargs):
-    raise RuntimeError(
-        "plot_recovery_pipeline() was removed from the video output set. "
-        "Use plot_main_noisy_vs_recovered() and plot_dft_filter_explanation() instead."
-    )
-
-
-def plot_window_sensitivity(data):
-    return plot_stress_tests_summary(data, {})
-
-
-def plot_noise_robustness(results):
-    # Minimal compatibility figure if called alone.
-    fig, ax = plt.subplots(figsize=(9, 5))
-    for key in ORDER:
-        if key in results:
-            d = results[key]
-            ax.plot(d["snr_levels"], d["hr_error"], "o-",
-                    color=COLORS[key], label=LABELS[key])
-    ax.axhline(10, color=COLORS["accent"], linestyle="--", label="10 BPM threshold")
-    ax.set_xlabel("SNR (dB)"); ax.set_ylabel("|BPM error|"); ax.grid(True)
-    ax.legend(fontsize=8, facecolor="#1a1a1a")
-    ax.invert_xaxis()
-    _save(fig, "fig_unused_noise_robustness.png")
-    return fig
-
-
-def plot_failure_cases(data):
-    return plot_dft_failure_case(data)
-
-
-def plot_interesting_cases(cases: dict, fs: int = 500):
-    print("  ! Interesting cases figure skipped for the 4-figure video output set.")
-    return None

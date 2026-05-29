@@ -35,8 +35,8 @@ Output saved to ./figures/
   ─────
   fig1_three_hearts.png          three cardiac signatures
   fig2_recovery_normal.png       DFT recovery pipeline, normal
-  fig2_recovery_bradycardia.png  DFT recovery pipeline, dying/inverse
-  fig2_recovery_arrhythmia.png   DFT recovery pipeline, zombie
+  fig2_recovery_arrhythmia.png   DFT recovery pipeline, arrhythmia / turning
+  fig2_recovery_bradycardia.png  DFT recovery pipeline, bradycardia inversed / zombie
   fig3a_window_spectra.png       parameter sensitivity: window spectra
   fig3b_window_accuracy.png      parameter sensitivity: BPM accuracy
   fig4_noise_robustness.png      noise robustness: BPM error vs SNR
@@ -49,19 +49,21 @@ Output saved to ./figures/
   audio_normal_distorted.wav     after real noise corruption
   audio_normal_recovered.wav     after DFT bandpass recovery
 
-  audio_bradycardia_original.wav
-  audio_bradycardia_distorted.wav
-  audio_bradycardia_recovered.wav
-
   audio_arrhythmia_original.wav
   audio_arrhythmia_distorted.wav
   audio_arrhythmia_recovered.wav
+
+  audio_bradycardia_original.wav
+  audio_bradycardia_distorted.wav
+  audio_bradycardia_recovered.wav
 """
 
 import sys, time, os
 import numpy as np
 import scipy.io.wavfile as wavfile
 from scipy.signal import resample as scipy_resample
+
+print("RUNNING RUN_ME FILE:", __file__)
 
 print("=" * 60)
 print("  ☣  ZOMBIE ECG PROJECT -- generating all figures + audio")
@@ -84,6 +86,16 @@ SNR_DB   = 5
 
 FIG_DIR = os.path.join(os.path.dirname(__file__), "figures")
 os.makedirs(FIG_DIR, exist_ok=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLEAR OLD OUTPUTS SO NEW GRAPHS ARE DEFINITELY REGENERATED
+# ─────────────────────────────────────────────────────────────────────────────
+for filename in os.listdir(FIG_DIR):
+    if filename.endswith((".png", ".wav")):
+        file_path = os.path.join(FIG_DIR, filename)
+        os.remove(file_path)
+
+print(f"  Cleared old figures/audio from: {FIG_DIR}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADVANCED ECG SONIFICATION
@@ -194,18 +206,18 @@ def save_audio(ecg, t, label, fs=FS, out_dir=FIG_DIR):
 print("\n[1/6] Loading real MIT-BIH recordings ...")
 
 t, ecg_normal      = generate_normal     (duration=DURATION)
-_, ecg_bradycardia = generate_bradycardia(duration=DURATION)
 _, ecg_arrhythmia  = generate_arrhythmia (duration=DURATION)
+_, ecg_bradycardia = generate_bradycardia(duration=DURATION)
 
 signals_clean = {
     "normal":      ecg_normal,
-    "bradycardia": ecg_bradycardia,
     "arrhythmia":  ecg_arrhythmia,
+    "bradycardia": ecg_bradycardia,
 }
 
-print(f"   Normal       BPM (DFT): {heart_rate_dft(ecg_normal, FS):.1f}")
-print(f"   Bradycardia  BPM (DFT): {heart_rate_dft(ecg_bradycardia, FS):.1f}")
-print(f"   Arrhythmia   BPM (DFT): {heart_rate_dft(ecg_arrhythmia, FS):.1f}")
+print(f"   Normal                         BPM (DFT): {heart_rate_dft(ecg_normal, FS):.1f}")
+print(f"   Arrhythmia / turning           BPM (DFT): {heart_rate_dft(ecg_arrhythmia, FS):.1f}")
+print(f"   Bradycardia inversed / zombie  BPM (DFT): {heart_rate_dft(ecg_bradycardia, FS):.1f}")
 
 plot_three_hearts(t, signals_clean, FS)
 
@@ -217,8 +229,8 @@ print(f"      Noise dir : {NOISE_DIR}")
 
 for label, ecg_clean, color_key in [
     ("normal",      ecg_normal,      "normal"),
-    ("bradycardia", ecg_bradycardia,  "bradycardia"),
     ("arrhythmia",  ecg_arrhythmia,  "arrhythmia"),
+    ("bradycardia", ecg_bradycardia, "bradycardia"),
 ]:
     # ── add REAL physiological noise ─────────────────────────────────────────
     noisy = add_real_noise(ecg_clean, FS, snr_db=SNR_DB,
@@ -227,7 +239,13 @@ for label, ecg_clean, color_key in [
     # ── DFT recovery ─────────────────────────────────────────────────────────
     recovered, X_noisy, X_recovered, freqs = recover_ecg(noisy, FS)
 
-    print(f"   {label:15s}  clean BPM={heart_rate_dft(ecg_clean,  FS):.1f}  "
+    display_label = {
+        "normal": "normal",
+        "arrhythmia": "arrhythmia / turning",
+        "bradycardia": "bradycardia inversed / zombie",
+    }[label]
+
+    print(f"   {display_label:30s}  clean BPM={heart_rate_dft(ecg_clean,  FS):.1f}  "
           f"noisy BPM={heart_rate_dft(noisy,     FS):.1f}  "
           f"recovered BPM={heart_rate_dft(recovered, FS):.1f}")
 
@@ -287,7 +305,41 @@ else:
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n" + "=" * 60)
 print("  Done! All figures + 9 audio files saved to ./figures/")
+print("  Order: normal → arrhythmia (turning) → bradycardia inversed (zombie)")
 print("  Audio files: 3 heart types × 3 versions (original / distorted / recovered)")
 print("  Note: ECG frequencies are shifted ×88 into the audible range.")
 print("        Heartbeat rhythm is clearly distinguishable across types.")
 print("=" * 60)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OPEN UPDATED FIGURES AUTOMATICALLY
+# ─────────────────────────────────────────────────────────────────────────────
+import subprocess
+import platform
+
+def open_file(path):
+    system = platform.system()
+
+    if system == "Windows":
+        os.startfile(path)
+    elif system == "Darwin":  # macOS
+        subprocess.run(["open", path])
+    else:  # Linux
+        subprocess.run(["xdg-open", path])
+
+figures_to_open = [
+    "fig1_three_hearts.png",
+    "fig2_recovery_normal.png",
+    "fig2_recovery_arrhythmia.png",
+    "fig2_recovery_bradycardia.png",
+    "fig3a_window_spectra.png",
+    "fig3b_window_accuracy.png",
+    "fig4_noise_robustness.png",
+    "fig5_failure_cases.png",
+    "fig6_interesting_cases.png",
+]
+
+for fig_name in figures_to_open:
+    fig_path = os.path.join(FIG_DIR, fig_name)
+    if os.path.exists(fig_path):
+        open_file(fig_path)

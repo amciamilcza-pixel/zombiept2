@@ -6,19 +6,24 @@ Place your downloaded mitdb/ folder in the same directory as run_me.py.
 
 Record selection and their clinical meaning
 -------------------------------------------
+The main storyline order used everywhere in the project is:
+  1. NORMAL heart
+  2. ARRHYTHMIA heart (turning / infected)
+  3. BRADYCARDIA INVERSED heart (zombie)
+
 NORMAL heart (record 100)
   Classic normal sinus rhythm. Clean regular PQRST, ~75 BPM.
   Used as the healthy survivor baseline.
 
-DYING / INVERSE heart (record 119)
+ARRHYTHMIA / TURNING heart (record 203)
+  Extremely irregular, chaotic rhythm -- the most arrhythmic record
+  in MIT-BIH. Used as the turning / infected stage.
+
+BRADYCARDIA INVERSED / ZOMBIE heart (record 119)
   Contains significant bradycardia and conduction abnormalities.
   We INVERT this signal (multiply by -1) so the R-peak points DOWN
-  and the P/T waves point UP -- the 'dying heart' effect.
-  Amplitude also reduced to 50% to represent the weak, failing pump.
-
-ZOMBIE heart (record 203)
-  Extremely irregular, chaotic rhythm -- the most arrhythmic record
-  in MIT-BIH. Perfect zombie: no consistent period, wild amplitude swings.
+  and the P/T waves point UP -- the zombie ECG effect.
+  Amplitude is also reduced to 50% to represent a weak, failing pump.
 
 INTERESTING CASES (loaded separately for the extra analysis figure)
   207 : very deep S-wave groove (pronounced negative deflection)
@@ -147,13 +152,12 @@ def generate_normal(fs=500, duration=10.0, seed=0):
 
 def generate_bradycardia(fs=500, duration=10.0, seed=1):
     """
-    Record 119 — bradycardia / conduction abnormality.
-    Signal is INVERTED (×-1) so R-peak points DOWN and P/T point UP.
-    Amplitude scaled to 50% — the dying, barely-pumping heart.
+    Record 119 — BRADYCARDIA INVERSED / ZOMBIE.
+    This is the final zombie stage in the project storyline.
 
-    Why invert? In the zombie apocalypse narrative this represents a heart
-    whose electrical axis has reversed — a real clinical sign seen in
-    posterior MI and certain bundle-branch blocks.
+    The signal is inverted (×-1), so the R-peak points DOWN and the
+    P/T waves point UP. The amplitude is also scaled to 50% to make
+    it look weaker and less alive.
     """
     t, sig, _ = _load_record('119', duration=duration)
     sig_inverted = -sig * 0.5
@@ -162,10 +166,13 @@ def generate_bradycardia(fs=500, duration=10.0, seed=1):
 
 def generate_arrhythmia(fs=500, duration=10.0, seed=2):
     """
-    Record 203 — the most chaotic record in MIT-BIH.
-    Extremely irregular timing and amplitude — perfect zombie heart.
-    No consistent RR interval → DFT gives smeared, misleading spectrum
-    (this is stress test 3B: the global DFT failure case).
+    Record 203 — ARRHYTHMIA / TURNING.
+    This is the middle stage in the project storyline: the patient is
+    turning / infected, so the rhythm is irregular and unstable.
+
+    The signal is not inverted. It remains a chaotic arrhythmia case,
+    which also demonstrates that a global DFT can be misleading for
+    non-stationary ECG signals.
     """
     t, sig, _ = _load_record('203', duration=duration)
     return t, sig
@@ -182,11 +189,11 @@ INTERESTING_CASES = {
         'color': '#ff9944',
     },
     '203': {
-        'label': '203 — Irregular chaotic rhythm',
+        'label': '203 — Arrhythmia / turning rhythm',
         'description': 'Extremely irregular beat timing and amplitude.\n'
                        'DFT shows a smeared spectrum — no clean harmonics.\n'
                        'Best example of DFT non-stationarity failure.',
-        'color': '#ff3333',
+        'color': '#ff6600',
     },
     '116': {
         'label': '116 — Very fast ventricular rate',
@@ -203,10 +210,10 @@ INTERESTING_CASES = {
         'color': '#aaaaff',
     },
     '119': {
-        'label': '119 — Arrhythmia / bradycardia',
+        'label': '119 — Bradycardia inversed / zombie',
         'description': 'Slow irregular rhythm with conduction blocks.\n'
                        'Used as the dying heart base signal.',
-        'color': '#4488ff',
+        'color': '#ff3333',
     },
     '122': {
         'label': '122 — Strong sharp peaks, fast',

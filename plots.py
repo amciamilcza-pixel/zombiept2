@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import os
 
+print("USING PLOTS FILE:", __file__)
+
 # ── global style ──────────────────────────────────────────────────────────────
 plt.rcParams.update({
     "figure.facecolor":  "#0d0d0d",
@@ -31,9 +33,9 @@ plt.rcParams.update({
 })
 
 COLORS = {
-    "normal":       "#00ff88",   # green  — survivor
-    "bradycardia":  "#4488ff",   # blue   — turning
-    "arrhythmia":   "#ff3333",   # red    — zombie
+    "normal":       "#00ff88",   # green  — normal survivor
+    "arrhythmia":   "#ff6600",   # orange — turning / infected
+    "bradycardia":  "#ff3333",   # red    — inverted zombie
     "noisy":        "#888888",
     "recovered":    "#ffcc00",
     "accent":       "#ff6600",
@@ -56,15 +58,16 @@ def _save(fig, name):
 
 def plot_three_hearts(t, signals, fs, title_suffix=""):
     """
-    signals : dict  {"normal": array, "bradycardia": array, "arrhythmia": array}
+    signals : dict  {"normal": array, "arrhythmia": array, "bradycardia": array}
     Shows time domain (left) and DFT magnitude (right) for all three.
+    Main storyline order: normal → arrhythmia (turning) → bradycardia inversed (zombie).
     """
     labels = {
         "normal":      "NORMAL  (~70 BPM)",
-        "bradycardia": "BRADYCARDIA  (~30 BPM)  [dying]",
-        "arrhythmia":  "ARRHYTHMIA  (~140 BPM)  [zombie]",
+        "arrhythmia":  "ARRHYTHMIA  [turning / infected]",
+        "bradycardia": "BRADYCARDIA INVERSED  [zombie]",
     }
-    keys = ["normal", "bradycardia", "arrhythmia"]
+    keys = ["normal", "arrhythmia", "bradycardia"]
 
     fig = plt.figure(figsize=(14, 9))
     fig.suptitle(f"☣  ZOMBIE APOCALYPSE ECG — Three Cardiac Signatures  {title_suffix}",
@@ -233,8 +236,8 @@ def plot_noise_robustness(results):
 
     name_labels = {
         "normal":      ("NORMAL", COLORS["normal"]),
-        "bradycardia": ("BRADYCARDIA", COLORS["bradycardia"]),
-        "arrhythmia":  ("ARRHYTHMIA", COLORS["arrhythmia"]),
+        "arrhythmia":  ("ARRHYTHMIA — turning", COLORS["arrhythmia"]),
+        "bradycardia": ("BRADYCARDIA INVERSED — zombie", COLORS["bradycardia"]),
     }
 
     for ax, (name, (label, color)) in zip(axes, name_labels.items()):
@@ -267,7 +270,7 @@ def plot_failure_cases(data):
                  fontsize=12, color=COLORS["accent"])
     gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.5, wspace=0.35)
 
-    # ── B1: global DFT of arrhythmia ─────────────────────────────────────────
+    # ── B1: global DFT of arrhythmia / turning signal ───────────────────────
     ax3 = fig.add_subplot(gs[1, 0])
     mask_g = ns["freqs_global"] <= 6
     ax3.plot(ns["freqs_global"][mask_g], ns["mag_global"][mask_g],

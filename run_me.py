@@ -1,7 +1,7 @@
 """
 run_me.py
-Main script for the Zombie ECG DFT project.
-Generates the final four figures.
+Main script for the Zombie ECG DFT project
+Generates the final four figures
 """
 
 import os
@@ -44,18 +44,21 @@ for filename in os.listdir(FIG_DIR):
 print("Old figure files removed.")
 
 
+# Load the three ECG signals - normal, early-stage(arrythmia) and zombie(bradycardia)
 print("Loading ECG signals...")
 
 t, ecg_normal = generate_normal(duration=DURATION)
 _, ecg_arrhythmia = generate_arrhythmia(duration=DURATION)
 _, ecg_bradycardia = generate_bradycardia(duration=DURATION)
 
+# Create a dictionary with labels for each signal
 signals_clean = {
     "normal": ecg_normal,
     "arrhythmia": ecg_arrhythmia,
     "bradycardia": ecg_bradycardia,
 }
 
+# Estimate the heartbeat BPM using DFT
 print("Clean signal BPM estimates:")
 for name, signal in signals_clean.items():
     bpm = heart_rate_dft(signal, FS)
@@ -68,19 +71,24 @@ signals_noisy = {}
 signals_recovered = {}
 recovery_info = {}
 
+# Add noise to each signal, recover it with DFT bandpass and store results
+# Returns cleaned ECG signal in time domain, DFT spectrum of noisy signal, DFT spectrum after filtering and frequency axis in Hz
 for name, clean_signal in signals_clean.items():
     noisy = add_real_noise(clean_signal, fs=FS, snr_db=SNR_DB)
     recovered, X_noisy, X_recovered, freqs = recover_ecg(noisy, FS)
 
+    # Stores noisy and recovered signals for each heartbeat type in dictionaries
     signals_noisy[name] = noisy
     signals_recovered[name] = recovered
 
+    # Saves noisy and recovered DFT spectrums for figure 2, as well as the frequency axis
     recovery_info[name] = {
         "X_noisy": X_noisy,
         "X_recovered": X_recovered,
         "freqs": freqs,
     }
 
+    # Print BPM before noise, after noise and after filtering to see if DFT improved the reading
     print(
         f"{name}: "
         f"clean = {heart_rate_dft(clean_signal, FS):.1f} BPM, "
@@ -91,8 +99,10 @@ for name, clean_signal in signals_clean.items():
 
 print("\nGenerating figures...")
 
+# Create figure 1 to show noisy vs recovered ECG for each case
 plot_main_noisy_vs_recovered(t, signals_noisy, signals_recovered, FS)
 
+# Create figure 2 to visualize the DFT spectrum before and after filtering using the normal heartbeat
 plot_dft_filter_explanation(
     recovery_info["normal"]["freqs"],
     recovery_info["normal"]["X_noisy"],
@@ -100,10 +110,12 @@ plot_dft_filter_explanation(
     example_label="normal",
 )
 
-window_data = window_sensitivity(fs=FS, duration=DURATION)
-noise_data = noise_robustness(fs=FS, duration=DURATION)
+# Create figure 3 to visualise the stress tests
+window_data = window_sensitivity(fs=FS, duration=DURATION) # checks how window size impacts BPM estimate
+noise_data = noise_robustness(fs=FS, duration=DURATION) # checks how BPM estimate works under different noise levels
 plot_stress_tests_summary(window_data, noise_data)
 
+# Create figure 4 to run the failure test: runs arrythmia signal and compares one DFT over whole signal vs repeated DFTs over short windows
 failure_data = failure_cases(fs=FS)
 plot_dft_failure_case(failure_data)
 
@@ -117,10 +129,11 @@ expected_figures = [
 
 print("\nDone. Checking final figures:")
 
+# Creates full path to each figure
 for fig_name in expected_figures:
     fig_path = os.path.join(FIG_DIR, fig_name)
 
     if os.path.exists(fig_path):
-        print(f"✓ {fig_name} created")
+        print(f"YES, {fig_name} created")
     else:
-        print(f"✗ {fig_name} missing")
+        print(f"NO, {fig_name} missing")

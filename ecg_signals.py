@@ -1,27 +1,11 @@
 import os
 import numpy as np
 import wfdb
-from scipy.signal import resample as scipy_resample
 
 #sets a path to MIT-BIH database files
 NOISE_DIR = os.path.join(os.path.dirname(os.path.abspath("nstdb")), "nstdb")
 
-#helper function that given record ID finds MIT-BIH file (saved with domain .hea)
-def _find_mitdb(record_id: str) -> str:
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(this_dir, "mitdb", record_id),          # zombieheart/mitdb/
-        os.path.join(this_dir, "..", "mitdb", record_id),     # one level up
-        os.path.join(os.getcwd(), "mitdb", record_id),        # cwd/mitdb/
-        os.path.join(os.getcwd(), record_id),                 # cwd/ directly
-    ]
-    for path in candidates:
-        if os.path.exists(path + ".hea"):
-            return path
-    raise FileNotFoundError(
-        f"\n\n  Could not find MIT-BIH record '{record_id}'.\n"
-        f"  Expected location: {os.path.join(this_dir, 'mitdb', record_id + '.hea')}\n"
-    )
+MITDB_DIR = "mitdb"
 
 def _load_record(record_id: str, duration: float = 10.0,
                  start_sec: float = 5.0, channel: int = 0):
@@ -42,8 +26,8 @@ def _load_record(record_id: str, duration: float = 10.0,
     sig : ECG signal array
     fs  : effective sample rate (always 500 Hz after resampling)
     """
-    path = _find_mitdb(record_id)
-    rec  = wfdb.rdrecord(path)
+    path = os.path.join("mitdb", record_id)
+    rec = wfdb.rdrecord(path)
     fs_orig = rec.fs
     sig_all = rec.p_signal[:, channel].astype(float)
 

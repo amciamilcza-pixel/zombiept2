@@ -1,217 +1,132 @@
 """
 run_me.py
 =========
-ZOMBIE APOCALYPSE ECG — DFT Signals & Systems Project
-Signals and Systems 4CA20, 2025-2026
-------------------------------------------------------
-Loads REAL MIT-BIH Arrhythmia Database recordings.
-Uses REAL MIT-BIH Noise Stress Test Database recordings for noise.
+Zombie Apocalypse ECG — DFT Signals & Systems Project
 
-REQUIREMENTS
-------------
-1. pip install numpy matplotlib scipy wfdb
-2. Place the mitdb/ folder in the same directory as this file:
+This version generates only the four video-ready figures:
+  1. fig1_main_noisy_vs_recovered.png
+  2. fig2_dft_filter_explanation.png
+  3. fig3_stress_tests_summary.png
+  4. fig4_dft_failure_case.png
 
-   zombieheart/
-     mitdb/
-       100.dat  100.hea
-       116.dat  116.hea  ... etc
-     nstdb/
-       bw.dat   bw.hea       ← MIT-BIH Noise Stress Test Database
-       em.dat   em.hea         (baseline wander, electrode motion,
-       ma.dat   ma.hea          muscle artifact)
-     run_me.py
-     ecg_signals.py
-     ...
+Story/order everywhere:
+  normal → arrhythmia / turning → bradycardia inversed / zombie
 
-   !! If your noise files live elsewhere, update NOISE_DIR inside
-      ecg_signals.py (clearly marked at the top of that file) !!
-
-Run:
-    python3 run_me.py
-
-Output saved to ./figures/
-  Plots
-  ─────
-  fig1_three_hearts.png          three cardiac signatures
-  fig2_recovery_normal.png       DFT recovery pipeline, normal
-  fig2_recovery_arrhythmia.png   DFT recovery pipeline, arrhythmia / turning
-  fig2_recovery_bradycardia.png  DFT recovery pipeline, bradycardia inversed / zombie
-  fig3a_window_spectra.png       parameter sensitivity: window spectra
-  fig3b_window_accuracy.png      parameter sensitivity: BPM accuracy
-  fig4_noise_robustness.png      noise robustness: BPM error vs SNR
-  fig5_failure_cases.png         failure cases: leakage + non-stationarity
-  fig6_interesting_cases.png     real MIT-BIH interesting records
-
-  Audio  (44100 Hz WAV, ~5 s each, ECG content pitch-shifted into audible range)
-  ─────────────────────────────────────────────────────────────────────────────
-  audio_normal_original.wav      clean normal sinus rhythm
-  audio_normal_distorted.wav     after real noise corruption
-  audio_normal_recovered.wav     after DFT bandpass recovery
-
-  audio_arrhythmia_original.wav
-  audio_arrhythmia_distorted.wav
-  audio_arrhythmia_recovered.wav
-
-  audio_bradycardia_original.wav
-  audio_bradycardia_distorted.wav
-  audio_bradycardia_recovered.wav
+It still exports audio files for all three ECG types.
 """
 
-import sys, time, os
+import os
+import time
+import platform
+import subprocess
 import numpy as np
 import scipy.io.wavfile as wavfile
-from scipy.signal import resample as scipy_resample
 
-print("RUNNING RUN_ME FILE:", __file__)
+print("=" * 68)
+print("  ☣  ZOMBIE ECG PROJECT — generating 4 video-ready DFT figures")
+print("  Using REAL MIT-BIH ECG recordings + REAL NSTDB noise where available")
+print("=" * 68)
 
-print("=" * 60)
-print("  ☣  ZOMBIE ECG PROJECT -- generating all figures + audio")
-print("  Using REAL MIT-BIH recordings + REAL NSTDB noise")
-print("=" * 60)
+from ecg_signals import (
+    generate_normal,
+    generate_arrhythmia,
+    generate_bradycardia,
+    add_real_noise,
+    NOISE_DIR,
+)
+from dft_filter import recover_ecg, heart_rate_dft
+from stress_tests import window_sensitivity, noise_robustness, failure_cases
+from plots import (
+    plot_main_noisy_vs_recovered,
+    plot_dft_filter_explanation,
+    plot_stress_tests_summary,
+    plot_dft_failure_case,
+)
 
-from ecg_signals  import (generate_normal, generate_bradycardia,
-                           generate_arrhythmia, add_real_noise,
-                           load_all_interesting_cases, NOISE_DIR)
-from dft_filter   import recover_ecg, heart_rate_dft
-from stress_tests import (window_sensitivity, noise_robustness,
-                           failure_cases)
-from plots        import (plot_three_hearts, plot_recovery_pipeline,
-                           plot_window_sensitivity, plot_noise_robustness,
-                           plot_failure_cases, plot_interesting_cases)
-
-FS       = 500
+FS = 500
 DURATION = 10.0
-SNR_DB   = 5
+SNR_DB = 5
+AUDIO_FS = 44100
+OPEN_FIGURES = True   # set to False if you do not want the PNGs to open automatically
 
-FIG_DIR = os.path.join(os.path.dirname(__file__), "figures")
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+FIG_DIR = os.path.join(PROJECT_DIR, "figures")
 os.makedirs(FIG_DIR, exist_ok=True)
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# CLEAR OLD OUTPUTS SO NEW GRAPHS ARE DEFINITELY REGENERATED
+# Clear old video outputs so you cannot accidentally use outdated images
 # ─────────────────────────────────────────────────────────────────────────────
 for filename in os.listdir(FIG_DIR):
     if filename.endswith((".png", ".wav")):
-        file_path = os.path.join(FIG_DIR, filename)
-        os.remove(file_path)
-
-print(f"  Cleared old figures/audio from: {FIG_DIR}")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ADVANCED ECG SONIFICATION
-# ─────────────────────────────────────────────────────────────────────────────
-
-AUDIO_FS = 44100
+        os.remove(os.path.join(FIG_DIR, filename))
+print(f"  Cleared old PNG/WAV outputs from: {FIG_DIR}")
 
 
-def save_audio(ecg, t, label, fs=FS, out_dir=FIG_DIR):
-    """
-    ECG sonification using:
-      1. Frequency modulation (main audible heartbeat)
-      2. Pulse enhancement for R-peaks
-      3. Stereo ambience for dramatic effect
-    """
-
-    # ------------------------------------------------------------------
-    # Resample ECG into audio timeline
-    # ------------------------------------------------------------------
+def save_audio(ecg, t, label, out_dir=FIG_DIR):
+    """Save a short stereo sonification of one ECG signal."""
     t_audio = np.arange(0, t[-1], 1.0 / AUDIO_FS)
-
     ecg_audio = np.interp(t_audio, t, ecg)
-
-    # Remove DC offset
     ecg_audio = ecg_audio - np.mean(ecg_audio)
 
-    # Normalize safely
     peak = np.max(np.abs(ecg_audio))
     if peak > 1e-9:
         ecg_audio = ecg_audio / peak
 
-    # ------------------------------------------------------------------
-    # Smooth slightly (reduces harsh artifacts)
-    # ------------------------------------------------------------------
-    kernel_size = 15
-    kernel = np.ones(kernel_size) / kernel_size
-    ecg_smooth = np.convolve(ecg_audio, kernel, mode='same')
+    kernel = np.ones(15) / 15
+    ecg_smooth = np.convolve(ecg_audio, kernel, mode="same")
 
-    # ------------------------------------------------------------------
-    # FM SYNTHESIS
-    # ------------------------------------------------------------------
     carrier_freq = 220.0
-
-    # Bigger modulation = clearer heartbeat differences
     modulation_depth = 500.0
-
     phase = 2 * np.pi * (
         carrier_freq * t_audio +
         modulation_depth * np.cumsum(ecg_smooth) / AUDIO_FS
     )
-
     fm_wave = np.sin(phase)
 
-    # ------------------------------------------------------------------
-    # Add heartbeat pulse clicks from sharp ECG transitions
-    # ------------------------------------------------------------------
     derivative = np.abs(np.gradient(ecg_smooth))
-
     derivative /= np.max(derivative) + 1e-9
-
     pulse = derivative ** 2
-
-    # Short pulse envelope
-    pulse = np.convolve(
-        pulse,
-        np.hanning(200),
-        mode='same'
-    )
-
+    pulse = np.convolve(pulse, np.hanning(200), mode="same")
     pulse_tone = pulse * np.sin(2 * np.pi * 80 * t_audio)
 
-    # ------------------------------------------------------------------
-    # Blend layers
-    # ------------------------------------------------------------------
-    audio = (
-        0.75 * fm_wave +
-        0.55 * pulse_tone
-    )
-
-    # ------------------------------------------------------------------
-    # Gentle stereo widening
-    # ------------------------------------------------------------------
-    left = audio
-    right = np.roll(audio, 120)
-
-    stereo = np.vstack([left, right]).T
-
-    # Normalize final output
+    audio = 0.75 * fm_wave + 0.55 * pulse_tone
+    stereo = np.vstack([audio, np.roll(audio, 120)]).T
     stereo /= np.max(np.abs(stereo)) + 1e-9
-
-    # Soft limiting
     stereo = np.tanh(1.5 * stereo)
 
-    audio_int16 = np.int16(stereo * 32767)
-
     path = os.path.join(out_dir, f"audio_{label}.wav")
-
-    wavfile.write(path, AUDIO_FS, audio_int16)
-
+    wavfile.write(path, AUDIO_FS, np.int16(stereo * 32767))
     print(f"  ♪  saved {path}")
-
     return path
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SECTION 1 — Load real MIT-BIH recordings
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[1/6] Loading real MIT-BIH recordings ...")
+def open_file(path):
+    """Open a file with the default system app."""
+    try:
+        if platform.system() == "Windows":
+            os.startfile(path)  # noqa: B606 - intentional local file opening
+        elif platform.system() == "Darwin":
+            subprocess.run(["open", path], check=False)
+        else:
+            subprocess.run(["xdg-open", path], check=False)
+    except Exception as exc:
+        print(f"  ! Could not open {path}: {exc}")
 
-t, ecg_normal      = generate_normal     (duration=DURATION)
-_, ecg_arrhythmia  = generate_arrhythmia (duration=DURATION)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. Load clean ECG signals
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n[1/5] Loading ECG signals ...")
+
+# Required story order: normal → arrhythmia/turning → bradycardia inversed/zombie
+t, ecg_normal = generate_normal(duration=DURATION)
+_, ecg_arrhythmia = generate_arrhythmia(duration=DURATION)
 _, ecg_bradycardia = generate_bradycardia(duration=DURATION)
 
 signals_clean = {
-    "normal":      ecg_normal,
-    "arrhythmia":  ecg_arrhythmia,
+    "normal": ecg_normal,
+    "arrhythmia": ecg_arrhythmia,
     "bradycardia": ecg_bradycardia,
 }
 
@@ -219,127 +134,94 @@ print(f"   Normal                         BPM (DFT): {heart_rate_dft(ecg_normal,
 print(f"   Arrhythmia / turning           BPM (DFT): {heart_rate_dft(ecg_arrhythmia, FS):.1f}")
 print(f"   Bradycardia inversed / zombie  BPM (DFT): {heart_rate_dft(ecg_bradycardia, FS):.1f}")
 
-plot_three_hearts(t, signals_clean, FS)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 2 — Noise corruption → DFT recovery  +  audio export
+# 2. Add noise and recover with DFT filtering
 # ─────────────────────────────────────────────────────────────────────────────
-print(f"\n[2/6] Noise injection (real NSTDB, SNR = {SNR_DB} dB) + DFT recovery ...")
-print(f"      Noise dir : {NOISE_DIR}")
+print(f"\n[2/5] Adding noise and recovering ECGs with DFT filtering ...")
+print(f"      Noise directory: {NOISE_DIR}")
 
-for label, ecg_clean, color_key in [
-    ("normal",      ecg_normal,      "normal"),
-    ("arrhythmia",  ecg_arrhythmia,  "arrhythmia"),
-    ("bradycardia", ecg_bradycardia, "bradycardia"),
-]:
-    # ── add REAL physiological noise ─────────────────────────────────────────
-    noisy = add_real_noise(ecg_clean, FS, snr_db=SNR_DB,
-                           noise_dir=NOISE_DIR)
+signals_noisy = {}
+signals_recovered = {}
+recovery_info = {}
 
-    # ── DFT recovery ─────────────────────────────────────────────────────────
+for key in ["normal", "arrhythmia", "bradycardia"]:
+    clean = signals_clean[key]
+
+    noisy = add_real_noise(clean, FS, snr_db=SNR_DB, noise_dir=NOISE_DIR)
     recovered, X_noisy, X_recovered, freqs = recover_ecg(noisy, FS)
 
-    display_label = {
-        "normal": "normal",
-        "arrhythmia": "arrhythmia / turning",
-        "bradycardia": "bradycardia inversed / zombie",
-    }[label]
+    signals_noisy[key] = noisy
+    signals_recovered[key] = recovered
+    recovery_info[key] = {
+        "X_noisy": X_noisy,
+        "X_recovered": X_recovered,
+        "freqs": freqs,
+    }
 
-    print(f"   {display_label:30s}  clean BPM={heart_rate_dft(ecg_clean,  FS):.1f}  "
-          f"noisy BPM={heart_rate_dft(noisy,     FS):.1f}  "
-          f"recovered BPM={heart_rate_dft(recovered, FS):.1f}")
+    print(
+        f"   {key:12s} clean={heart_rate_dft(clean, FS):6.1f} BPM   "
+        f"noisy={heart_rate_dft(noisy, FS):6.1f} BPM   "
+        f"recovered={heart_rate_dft(recovered, FS):6.1f} BPM"
+    )
 
-    # ── recovery pipeline plot ────────────────────────────────────────────────
-    plot_recovery_pipeline(t, ecg_clean, noisy, recovered,
-                           X_noisy, X_recovered, freqs, FS,
-                           label=label, color_key=color_key)
+    save_audio(clean,     t, f"{key}_original")
+    save_audio(noisy,     t, f"{key}_distorted")
+    save_audio(recovered, t, f"{key}_recovered")
 
-    # ── audio export: original / distorted / recovered ───────────────────────
-    save_audio(ecg_clean, t, f"{label}_original")
-    save_audio(noisy,     t, f"{label}_distorted")
-    save_audio(recovered, t, f"{label}_recovered")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 3 — Stress test 1: parameter sensitivity
+# 3. Generate figures 1 and 2
 # ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/6] Stress test 1 -- parameter sensitivity (window length) ...")
+print("\n[3/5] Generating main result and DFT explanation figures ...")
+
+plot_main_noisy_vs_recovered(t, signals_noisy, signals_recovered, FS)
+
+# Use normal ECG as the clearest method example. The result figure already
+# shows all three ECG types, so the DFT explanation does not need three copies.
+plot_dft_filter_explanation(
+    recovery_info["normal"]["freqs"],
+    recovery_info["normal"]["X_noisy"],
+    recovery_info["normal"]["X_recovered"],
+    example_label="normal",
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Stress tests
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n[4/5] Running stress tests ...")
 t0 = time.time()
-ws_data = window_sensitivity(fs=FS, duration=DURATION)
-plot_window_sensitivity(ws_data)
-print(f"   Window sizes : {ws_data['window_sizes']}")
-print(f"   BPM estimates: {[f'{b:.1f}' for b in ws_data['hr_estimates']]}")
-print(f"   ({time.time()-t0:.1f}s)")
+window_data = window_sensitivity(fs=FS, duration=DURATION)
+noise_data = noise_robustness(fs=FS, duration=DURATION)
+plot_stress_tests_summary(window_data, noise_data)
+print(f"   Stress tests completed in {time.time() - t0:.1f} s")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 4 — Stress test 2: noise robustness
+# 5. Failure / limitation case
 # ─────────────────────────────────────────────────────────────────────────────
-print("\n[4/6] Stress test 2 -- noise robustness (SNR sweep) ...  ", end="", flush=True)
-t0 = time.time()
-nr_data = noise_robustness(fs=FS, duration=DURATION)
-plot_noise_robustness(nr_data)
-print(f"done  ({time.time()-t0:.1f}s)")
-for name, d in nr_data.items():
-    errors = np.array(d["hr_error"])
-    snrs   = np.array(d["snr_levels"])
-    bad    = snrs[errors > 10]
-    if len(bad):
-        print(f"   {name:15s}: detection breaks below SNR ~ {bad.max():.1f} dB")
+print("\n[5/5] Generating DFT limitation / failure case figure ...")
+failure_data = failure_cases(fs=FS)
+plot_dft_failure_case(failure_data)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 5 — Stress test 3: failure cases
+# Open the final four video figures
 # ─────────────────────────────────────────────────────────────────────────────
-print("\n[5/6] Stress test 3 -- failure cases ...")
-fc_data = failure_cases(fs=FS)
-plot_failure_cases(fc_data)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SECTION 6 — Interesting MIT-BIH cases
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[6/6] Loading interesting MIT-BIH cases ...")
-cases = load_all_interesting_cases(duration=DURATION)
-if cases:
-    plot_interesting_cases(cases, fs=FS)
-else:
-    print("  ! No cases loaded. Check your mitdb/ folder.")
-
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n" + "=" * 60)
-print("  Done! All figures + 9 audio files saved to ./figures/")
-print("  Order: normal → arrhythmia (turning) → bradycardia inversed (zombie)")
-print("  Audio files: 3 heart types × 3 versions (original / distorted / recovered)")
-print("  Note: ECG frequencies are shifted ×88 into the audible range.")
-print("        Heartbeat rhythm is clearly distinguishable across types.")
-print("=" * 60)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# OPEN UPDATED FIGURES AUTOMATICALLY
-# ─────────────────────────────────────────────────────────────────────────────
-import subprocess
-import platform
-
-def open_file(path):
-    system = platform.system()
-
-    if system == "Windows":
-        os.startfile(path)
-    elif system == "Darwin":  # macOS
-        subprocess.run(["open", path])
-    else:  # Linux
-        subprocess.run(["xdg-open", path])
-
 figures_to_open = [
-    "fig1_three_hearts.png",
-    "fig2_recovery_normal.png",
-    "fig2_recovery_arrhythmia.png",
-    "fig2_recovery_bradycardia.png",
-    "fig3a_window_spectra.png",
-    "fig3b_window_accuracy.png",
-    "fig4_noise_robustness.png",
-    "fig5_failure_cases.png",
-    "fig6_interesting_cases.png",
+    "fig1_main_noisy_vs_recovered.png",
+    "fig2_dft_filter_explanation.png",
+    "fig3_stress_tests_summary.png",
+    "fig4_dft_failure_case.png",
 ]
 
+print("\n" + "=" * 68)
+print("  Done. Final video figures saved to:")
 for fig_name in figures_to_open:
     fig_path = os.path.join(FIG_DIR, fig_name)
-    if os.path.exists(fig_path):
+    print(f"   - {fig_path}")
+    if OPEN_FIGURES and os.path.exists(fig_path):
         open_file(fig_path)
+print("\n  Audio files were also saved in the same figures/ folder.")
+print("=" * 68)

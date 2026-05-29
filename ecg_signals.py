@@ -4,13 +4,13 @@ import wfdb
 
 MITDB_DIR = "mitdb"
 NOISE_DIR = "nstdb"
-TARGET_FS = 500
+TARGET_FS = 500 # Define target sampling rate as 500 Hz
 
 
 def _load_record(record_id, duration=10.0, start_sec=5.0, channel=0):
     """
-    Load a short ECG segment from the MIT-BIH database.
-    The signal is resampled to 500 Hz and centered around zero.
+    Load a 5 seconds of ECG segment from the MIT-BIH database (skip less clean part of recording)
+    The signal is resampled to 500 Hz and centered around zero
     """
     path = os.path.join(MITDB_DIR, record_id)
     rec = wfdb.rdrecord(path)
@@ -22,21 +22,24 @@ def _load_record(record_id, duration=10.0, start_sec=5.0, channel=0):
     end_samp = start_samp + int(duration * fs_orig)
     sig = sig_all[start_samp:end_samp]
 
+    # Checks and resamples the original frequency to target frequency
     if fs_orig != TARGET_FS:
         n_out = int(len(sig) * TARGET_FS / fs_orig)
         t_in = np.linspace(0, 1, len(sig))
         t_out = np.linspace(0, 1, n_out)
-        sig = np.interp(t_out, t_in, sig)
+        sig = np.interp(t_out, t_in, sig) # estimates the ECG values at the new 500 Hz sample points
 
+    # Take away offset
     sig = sig - np.mean(sig)
 
+    # Create time values for the x-axis
     t = np.arange(len(sig)) / TARGET_FS
     return t, sig, TARGET_FS
 
 
 def generate_normal(duration=10.0):
     """
-    Record 100: normal ECG.
+    Load a normal heartbeat (Record 100)
     """
     t, sig, _ = _load_record("100", duration=duration)
     return t, sig
@@ -44,8 +47,8 @@ def generate_normal(duration=10.0):
 
 def generate_bradycardia(duration=10.0):
     """
-    Record 119: bradycardia ECG.
-    It is inverted and reduced in amplitude for the zombie effect.
+    Load a 'zombie' bradycardic heartbeat (Record 119)
+    It is inverted for the zombie effect
     """
     t, sig, _ = _load_record("119", duration=duration)
     return t, -sig
@@ -53,8 +56,7 @@ def generate_bradycardia(duration=10.0):
 
 def generate_arrhythmia(duration=10.0):
     """
-    Record 203: irregular arrhythmia ECG.
-    Used as the infected / turning heart.
+    Load an 'early-stage infected' arrythmic and irregular heartbeat (Record 203)
     """
     t, sig, _ = _load_record("203", duration=duration)
     return t, sig
@@ -62,7 +64,7 @@ def generate_arrhythmia(duration=10.0):
 
 def _load_noise_record(name, n_samples, fs, seed=0):
     """
-    Load a real noise signal from the MIT-BIH Noise Stress Test Database.
+    Load a real noise signal from the MIT-BIH Noise Stress Test Database
     """
     path = os.path.join(NOISE_DIR, name)
     rec = wfdb.rdrecord(path)

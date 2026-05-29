@@ -1,75 +1,13 @@
-"""
-ecg_signals.py
---------------
-Loads REAL ECG recordings from the MIT-BIH Arrhythmia Database.
-Place your downloaded mitdb/ folder in the same directory as run_me.py.
-
-Record selection and their clinical meaning
--------------------------------------------
-The main storyline order used everywhere in the project is:
-  1. NORMAL heart
-  2. ARRHYTHMIA heart (turning / infected)
-  3. BRADYCARDIA INVERSED heart (zombie)
-
-NORMAL heart (record 100)
-  Classic normal sinus rhythm. Clean regular PQRST, ~75 BPM.
-  Used as the healthy survivor baseline.
-
-ARRHYTHMIA / TURNING heart (record 203)
-  Extremely irregular, chaotic rhythm -- the most arrhythmic record
-  in MIT-BIH. Used as the turning / infected stage.
-
-BRADYCARDIA INVERSED / ZOMBIE heart (record 119)
-  Contains significant bradycardia and conduction abnormalities.
-  We INVERT this signal (multiply by -1) so the R-peak points DOWN
-  and the P/T waves point UP -- the zombie ECG effect.
-  Amplitude is also reduced to 50% to represent a weak, failing pump.
-
-INTERESTING CASES (loaded separately for the extra analysis figure)
-  207 : very deep S-wave groove (pronounced negative deflection)
-  116 : very fast ventricular rate
-  118 : noisy recording with lots of baseline artefact
-  122 : strong sharp peaks, fast rate
-  200 : mixed rhythms, weird morphology
-
-Noise (real MIT-BIH Noise Stress Test Database recordings)
-----------------------------------------------------------
-add_real_noise() mixes three physiological noise channels ON TOP of the ECG:
-  bw  — baseline wander        (slow electrode drift)
-  em  — electrode motion       (movement artefact)
-  ma  — muscle artifact        (EMG interference)
-
-All three are real recordings from the MIT-BIH NSTDB at 360 Hz,
-resampled to match the ECG sampling rate.  Amplitudes are scaled to
-the requested SNR relative to the clean ECG.
-
-  !! CHANGE NOISE_DIR BELOW to the folder containing bw/em/ma files !!
-
-add_noise() is kept as a synthetic fallback in case the
-real noise files are unavailable.
-"""
-
 import os
 import numpy as np
 import wfdb
 from scipy.signal import resample as scipy_resample
 
-# ── path to MIT-BIH Noise Stress Test Database files ─────────────────────────
-#   Set this to the folder that contains  bw.dat / bw.hea,
-#                                          em.dat / em.hea,
-#                                          ma.dat / ma.hea
-#   (download from  https://physionet.org/content/nstdb/1.0.0/)
+#sets a path to MIT-BIH database files
 NOISE_DIR = os.path.join(os.path.dirname(os.path.abspath("nstdb")), "nstdb")
 
-
-# ── path resolution ───────────────────────────────────────────────────────────
-
+#helper function that given record ID finds MIT-BIH file (saved with domain .hea)
 def _find_mitdb(record_id: str) -> str:
-    """
-    Find the mitdb directory relative to this file.
-    Tries several common locations so it works regardless of where
-    the user unzipped the database.
-    """
     this_dir = os.path.dirname(os.path.abspath(__file__))
     candidates = [
         os.path.join(this_dir, "mitdb", record_id),          # zombieheart/mitdb/
@@ -82,10 +20,8 @@ def _find_mitdb(record_id: str) -> str:
             return path
     raise FileNotFoundError(
         f"\n\n  Could not find MIT-BIH record '{record_id}'.\n"
-        f"  Make sure your 'mitdb' folder is inside your project folder.\n"
         f"  Expected location: {os.path.join(this_dir, 'mitdb', record_id + '.hea')}\n"
     )
-
 
 def _load_record(record_id: str, duration: float = 10.0,
                  start_sec: float = 5.0, channel: int = 0):

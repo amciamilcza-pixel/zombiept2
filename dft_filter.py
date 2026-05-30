@@ -3,56 +3,59 @@ import numpy as np
 
 def spectral_magnitude(signal, fs):
     """
-    Compute the one-sided DFT magnitude spectrum.
+    Compute the one-sided DFT magnitude spectrum (which frequencies are
+    present in the signal and shows their amplitude)
     """
     N = len(signal)
-    X = np.fft.fft(signal)
-    freqs = np.fft.fftfreq(N, d=1/fs)
+    X = np.fft.fft(signal) # Converts the ECG signal in frequency domain (X contains complex values - how much of each frequency present)
+    freqs = np.fft.fftfreq(N, d=1/fs) # Creates matching frequency values
 
-    half = N // 2
-    return freqs[:half], np.abs(X[:half]), X
+    half = N//2
+    return freqs[:half], np.abs(X[:half]), X # Return only the positive frequencies for plotting, and the full DFT
 
 
-def dft_bandpass(signal, fs, f_low=0.5, f_high=45.0):
+def dft_bandpass(signal, fs, f_low=0.5, f_high=45):
     """
-    Keep only frequencies between f_low and f_high using the DFT.
+    Keep only frequencies within the useful ECG range (between f_low and f_high) using DFT
     """
-    X = np.fft.fft(signal)
-    freqs = np.fft.fftfreq(len(signal), d=1/fs)
+    X = np.fft.fft(signal) 
+    freqs = np.fft.fftfreq(len(signal), d=1/fs) 
 
-    mask = (np.abs(freqs) >= f_low) & (np.abs(freqs) <= f_high)
-    X_filtered = X * mask
+    mask = (np.abs(freqs)>=f_low) & (np.abs(freqs)<=f_high) # Filter that checks if the given frequency is within the useful range
+    X_filtered = X*mask # Applies bandpass filter, automatically removes the 50Hz powerline signal
 
-    filtered = np.fft.ifft(X_filtered).real
+    filtered = np.fft.ifft(X_filtered).real # Convert signal back to time domain
     return filtered, X_filtered, freqs
 
 
-def recover_ecg(noisy_signal, fs, f_low=0.5, f_high=45.0):
+def recover_ecg(noisy_signal, fs, f_low=0.5, f_high=45):
     """
-    Recover ECG by keeping only the main ECG frequency band using the DFT.
-    Frequencies below f_low and above f_high are removed.
+    Recover ECG by keeping only the useful ECG frequency range using the DFT
     """
-    recovered, X_recovered, freqs = dft_bandpass(noisy_signal, fs, f_low, f_high)
+    recovered, X_recovered, freqs = dft_bandpass(noisy_signal, fs, f_low, f_high) # Apply bandpass filter
 
-    X_noisy = np.fft.fft(noisy_signal)
+    X_noisy = np.fft.fft(noisy_signal) # Compute the DFT of the noisy signal before filtering
 
     return recovered, X_noisy, X_recovered, freqs
 
 
 def heart_rate_dft(signal, fs, search_band=(0.5, 3.5)):
     """
-    Estimate BPM from the strongest DFT peak in a realistic heart-rate band.
+    Estimate BPM using the strongest frequency using DFT spectrum
+    Frequency where we expect heartrate is between 0.5 (30 BPM) and 3.5 Hz (210 BPM)
     """
-    freqs, mag, _ = spectral_magnitude(signal, fs)
+    freqs, mag, _ = spectral_magnitude(signal, fs) # Compute DFT spectrum
 
-    mask = (freqs >= search_band[0]) & (freqs <= search_band[1])
-    f_band = freqs[mask]
-    mag_band = mag[mask]
+    mask = (freqs >= search_band[0]) & (freqs <= search_band[1]) # Keep only useful range (0.5-3.5Hz)
+    f_band = freqs[mask] # Store the useful frequencies
+    mag_band = mag[mask] # Store the useful magnitudes
 
+    # Safety check: if there are no frequencies in the selected range, returns 0 BPM (otherwise crashes)
     if len(f_band) == 0:
-        return 0.0
+        return 0
 
-    dominant_freq = f_band[np.argmax(mag_band)]
+    # Find the strongest frequency in the band and calculates BPM
+    dominant_freq = f_band[np.argmax(mag_band)] 
     bpm = dominant_freq * 60
 
     return bpm

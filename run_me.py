@@ -7,9 +7,9 @@ Generates the final four figures
 import os
 
 from ecg_signals import (
-    generate_normal,
-    generate_arrhythmia,
-    generate_bradycardia,
+    load_normal,
+    load_infected,
+    load_zombie,
     add_real_noise,
 )
 
@@ -47,9 +47,9 @@ print("Old figure files removed.")
 # Load the three ECG signals - normal, early-stage(arrythmia) and zombie(bradycardia)
 print("Loading ECG signals...")
 
-t, ecg_normal = generate_normal(duration=DURATION)
-_, ecg_arrhythmia = generate_arrhythmia(duration=DURATION)
-_, ecg_bradycardia = generate_bradycardia(duration=DURATION)
+t, ecg_normal = load_normal(duration=DURATION)
+_, ecg_arrhythmia = load_infected(duration=DURATION)
+_, ecg_bradycardia = load_zombie(duration=DURATION)
 
 # Create a dictionary with labels for each signal
 signals_clean = {

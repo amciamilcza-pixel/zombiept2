@@ -1,6 +1,6 @@
 import numpy as np
 
-from ecg_signals import (load_normal, load_infected, load_zombie, add_noise,)
+from ecg_signals import (load_normal, load_bradycardia, load_arrhytmia, add_noise,)
 from dft_filter import heart_rate_dft, spectral_magnitude, dft_bandpass
 
 ## PARAMETER SENSITIVITY - observation window length
@@ -38,14 +38,14 @@ def window_sensitivity(fs=500, duration=10.0):
 def noise_robustness(fs=500, duration=10.0, n_trials=5):
     snr_levels = np.linspace(-5, 30, 15)         #dB
     true_bpms = {
-        "normal": 75.0,         #mean BPM of record 100
-        "zombie": 48.0,         #mean BPM of record 119
-        "infected": 88.0,       #mean BPM of record 203
+        "normal":75,         #mean BPM of record 100
+        "zombie":48,         #mean BPM of record 119
+        "turning":88,        #mean BPM of record 203
     }
     generators = {
         "normal":load_normal,
-        "zombie":load_zombie,
-        "infected":load_infected,
+        "zombie":load_bradycardia,
+        "turning":load_arrhytmia,
     }
     results = {}
 
@@ -78,7 +78,7 @@ def noise_robustness(fs=500, duration=10.0, n_trials=5):
 
 #compares one DFT of the whole signal to repeated DFTs over short windows 
 def failure_cases(fs=500):
-    t_arr, ecg_arr = load_infected(duration=10.0)      #Hz, seconds
+    t_arr, ecg_arr = load_bradycardia(duration=10.0)      #Hz, seconds
     #DFT of the whole signal
     #rfft of a real signal of length N returns N//2+1 unique frequency bins
     stft_mag = np.zeros((win_len // 2 + 1, n_frames))

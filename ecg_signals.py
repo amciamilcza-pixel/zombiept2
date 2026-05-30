@@ -35,16 +35,16 @@ def _load_record(record_id, duration=10.0, start_sec=5.0, channel=0):
     t = np.arange(len(sig))/TARGET_FS
     return t, sig, TARGET_FS
 
-#following three functions load records, respictively for healthy, zombie and infected cases 
+#following three functions load records, respictively for normal, turning (arrhythmia) and zombie (bradycardia)
 def load_normal(duration=10.0):
     t, sig, _ = _load_record("100", duration=duration)
     return t, sig
 
-def load_zombie(duration=10.0):
+def load_bradycardia(duration=10.0):
     t, sig, _ = _load_record("119", duration=duration)
     return t, -sig
 
-def load_infected(duration=10.0):
+def load_arrhytmia(duration=10.0):
     t, sig, _ = _load_record("203", duration=duration)
     return t, sig
 

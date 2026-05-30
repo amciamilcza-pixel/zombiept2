@@ -1,27 +1,10 @@
-"""
-plots.py
---------
-Presentation-focused plotting functions for the Zombie Apocalypse ECG / DFT project.
-
-Only four video-ready figures are generated:
-  fig1_main_noisy_vs_recovered.png
-  fig2_dft_filter_explanation.png
-  fig3_stress_tests_summary.png
-  fig4_dft_failure_case.png
-
-Story order everywhere:
-  1. normal
-  2. arrhythmia / turning
-  3. bradycardia inversed / zombie
-"""
-
 import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")  # safe backend; saves figures without needing a display
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ── global style ──────────────────────────────────────────────────────────────
+# global style 
 plt.rcParams.update({
     "figure.facecolor":  "#0d0d0d",
     "axes.facecolor":    "#111111",
@@ -37,18 +20,18 @@ plt.rcParams.update({
 })
 
 COLORS = {
-    "normal":      "#00ff88",  # green  — normal survivor
-    "arrhythmia":  "#ff6600",  # orange — turning / infected
-    "bradycardia": "#ff3333",  # red    — inverted zombie
+    "normal":      "#00ff88",  # green  — normal 
+    "arrhythmia":  "#ff6600",  # orange — turning 
+    "bradycardia": "#ff3333",  # red — zombie
     "noisy":       "#888888",
     "recovered":   "#ffcc00",
     "accent":      "#ff6600",
 }
 
 LABELS = {
-    "normal":      "NORMAL",
-    "arrhythmia":  "ARRHYTHMIA / TURNING",
-    "bradycardia": "BRADYCARDIA INVERSED / ZOMBIE",
+    "normal": "NORMAL",
+    "turning": "ARRHYTHMIA/TURNING",
+    "zombie": "BRADYCARDIA INVERSED/ZOMBIE",
 }
 
 ORDER = ["normal", "arrhythmia", "bradycardia"]
@@ -58,15 +41,12 @@ os.makedirs(FIG_DIR, exist_ok=True)
 
 
 def _save(fig, name):
-    """Save a figure into the local figures/ folder and print exact path."""
     path = os.path.join(FIG_DIR, name)
     fig.savefig(path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
     print(f"  ✓  saved {path}")
     return path
 
-
 def _one_sided_spectrum(x, fs):
-    """Return positive frequencies and one-sided DFT magnitude."""
     N = len(x)
     X = np.fft.fft(x)
     freqs = np.fft.fftfreq(N, d=1.0 / fs)
@@ -74,28 +54,17 @@ def _one_sided_spectrum(x, fs):
     return freqs[:half], np.abs(X[:half])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 1 — Main result: noisy vs recovered for all three cases
-# ─────────────────────────────────────────────────────────────────────────────
+## Fig 1. Main result 
+# - noisy signal in grey
+# - recovered signal in color
 
 def plot_main_noisy_vs_recovered(t, noisy_signals, recovered_signals, fs):
-    """
-    Video-ready main result.
-
-    One row per ECG case. Each row overlays:
-      - noisy signal in grey
-      - recovered signal in the case color
-
-    No separate clean/original trace is shown, so the figure stays readable.
-    """
     display = int(5 * fs)
-
     fig, axes = plt.subplots(3, 1, figsize=(14, 8), sharex=True)
     fig.suptitle(
-        "☣  ECG RECOVERY RESULT — Noisy Signal vs DFT-Recovered Signal",
+        "ECG RECOVERY RESULT — Noisy Signal vs DFT-Recovered Signal",
         fontsize=13, color=COLORS["accent"], y=0.98
     )
-
     for ax, key in zip(axes, ORDER):
         ax.plot(t[:display], noisy_signals[key][:display],
                 color=COLORS["noisy"], lw=0.8, alpha=0.75, label="Noisy ECG")
@@ -113,18 +82,10 @@ def plot_main_noisy_vs_recovered(t, noisy_signals, recovered_signals, fs):
     return fig
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 2 — DFT filtering explanation: one clear example
-# ─────────────────────────────────────────────────────────────────────────────
+# Fig 2. DFT filtering 
 
 def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
                                 example_label="normal", max_freq=80):
-    """
-    Show why the DFT is essential: filtering is done by changing the spectrum.
-
-    This intentionally uses one example only, not all three cases, to avoid
-    overcrowding the video.
-    """
     half = len(freqs) // 2
     f_pos = freqs[:half]
     mag_noisy = np.abs(X_noisy[:half])
@@ -135,14 +96,13 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
     mn = mag_noisy[mask]
     mr = mag_recovered[mask]
 
-    # Normalise only for display clarity; this does not change the processing.
     scale = max(np.max(mn), np.max(mr), 1e-12)
     mn = mn / scale
     mr = mr / scale
 
     fig, ax = plt.subplots(figsize=(14, 5.5))
     fig.suptitle(
-        "☣  DFT FILTERING EXPLANATION — What the Recovery Removes and Keeps",
+        "DFT FILTERING EXPLANATION — What the Recovery Removes and Keeps",
         fontsize=13, color=COLORS["accent"]
     )
 
@@ -168,23 +128,16 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
     return fig
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 3 — Stress test summary: parameter sensitivity + noise robustness
-# ─────────────────────────────────────────────────────────────────────────────
+# Fig 3. Stress tests
 
-def plot_stress_tests_summary(window_data, noise_data):
-    """
-    Combined video figure for two required stress tests:
-      left  = DFT parameter sensitivity via window length / frequency resolution
-      right = noise robustness via BPM error vs SNR
-    """
+def plot_stress_tests(window_data, noise_data):
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
     fig.suptitle(
-        "☣  DFT STRESS TESTS — Parameter Sensitivity and Noise Robustness",
+        "STRESS TESTS — Parameter Sensitivity and Noise Robustness",
         fontsize=13, color=COLORS["accent"]
     )
 
-    # ── left: window length sensitivity ──────────────────────────────────────
+    # window length sensitivity 
     ax = axes[0]
     window_sizes = np.array(window_data["window_sizes"])
     hr_estimates = np.array(window_data["hr_estimates"])
@@ -210,7 +163,7 @@ def plot_stress_tests_summary(window_data, noise_data):
     ax.grid(True)
     ax.legend(fontsize=8, facecolor="#1a1a1a", loc="best")
 
-    # ── right: noise robustness ──────────────────────────────────────────────
+    # noise robustness
     ax = axes[1]
     ax.axhline(10, color=COLORS["accent"], lw=1.2, linestyle="--",
                label="10 BPM error threshold")
@@ -231,35 +184,27 @@ def plot_stress_tests_summary(window_data, noise_data):
     ax.legend(fontsize=8, facecolor="#1a1a1a", loc="best")
 
     plt.tight_layout(rect=[0, 0, 1, 0.92])
-    _save(fig, "fig3_stress_tests_summary.png")
+    _save(fig, "fig3_stress_tests.png")
     return fig
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 4 — Failure case: global DFT vs sliding-window DFT
-# ─────────────────────────────────────────────────────────────────────────────
+# Fig 4. Failure case
 
-def plot_dft_failure_case(failure_data):
-    """
-    Show the limitation of a global DFT for non-stationary / irregular ECG.
-
-    Left: one global DFT spectrum.
-    Right: sliding-window DFT / STFT showing time variation.
-    """
+def plot_dft_failure(failure_data):
     ns = failure_data["nonstationarity"]
 
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
     fig.suptitle(
-        "☣  DFT LIMITATION — A Global Spectrum Can Hide Time Variation",
+        "DFT LIMITATION — A Global Spectrum Can Hide Time Variation",
         fontsize=13, color=COLORS["accent"]
     )
 
-    # ── global DFT ───────────────────────────────────────────────────────────
+    # one DFT on the whole signal
     ax = axes[0]
     mask = ns["freqs_global"] <= 6
     ax.plot(ns["freqs_global"][mask], ns["mag_global"][mask],
             color=COLORS["arrhythmia"], lw=1.4)
-    ax.set_title("Global DFT of arrhythmia / turning signal", fontsize=10,
+    ax.set_title("Global DFT of arrhythmia/turning signal", fontsize=10,
                  color=COLORS["arrhythmia"])
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("|X(f)|")
@@ -270,7 +215,7 @@ def plot_dft_failure_case(failure_data):
             bbox=dict(boxstyle="round,pad=0.3", facecolor="#1a1a1a",
                       alpha=0.85, edgecolor="none"))
 
-    # ── STFT / sliding-window DFT ────────────────────────────────────────────
+    # many DFTs on short windows (STFT)
     ax = axes[1]
     freq_mask = ns["stft_freqs"] <= 5
     im = ax.pcolormesh(
@@ -293,7 +238,7 @@ def plot_dft_failure_case(failure_data):
                       alpha=0.85, edgecolor="none"))
 
     plt.tight_layout(rect=[0, 0, 1, 0.92])
-    _save(fig, "fig4_dft_failure_case.png")
+    _save(fig, "fig4_dft_failure.png")
     return fig
 
 

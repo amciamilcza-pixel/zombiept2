@@ -7,7 +7,8 @@ def spectral_magnitude(signal, fs):
     present in the signal and shows their amplitude)
     """
     N = len(signal)
-    X = np.fft.fft(signal) # Converts the ECG signal in frequency domain (X contains complex values - how much of each frequency present)
+    X = np.fft.fft(signal) # Converts the ECG signal in frequency domain (X contains complex values -
+    # how much of each frequency present)
     freqs = np.fft.fftfreq(N, d=1/fs) # Creates matching frequency values
 
     half = N//2

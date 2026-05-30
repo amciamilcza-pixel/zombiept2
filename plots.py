@@ -60,7 +60,7 @@ os.makedirs(FIG_DIR, exist_ok=True)
 def _save(fig, name):
     """Save a figure into the local figures/ folder and print exact path."""
     path = os.path.join(FIG_DIR, name)
-    fig.savefig(path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(path, dpi=300, facecolor=fig.get_facecolor())
     print(f"  ✓  saved {path}")
     return path
 
@@ -90,7 +90,7 @@ def plot_main_noisy_vs_recovered(t, noisy_signals, recovered_signals, fs):
     """
     display = int(5 * fs)
 
-    fig, axes = plt.subplots(3, 1, figsize=(14, 8), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(16, 9), sharex=True)
     fig.suptitle(
         "☣  ECG RECOVERY RESULT — Noisy Signal vs DFT-Recovered Signal",
         fontsize=13, color=COLORS["accent"], y=0.98
@@ -140,7 +140,7 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
     mn = mn / scale
     mr = mr / scale
 
-    fig, ax = plt.subplots(figsize=(14, 5.5))
+    fig, ax = plt.subplots(figsize=(16,9))
     fig.suptitle(
         "☣  DFT FILTERING EXPLANATION — What the Recovery Removes and Keeps",
         fontsize=13, color=COLORS["accent"]
@@ -178,7 +178,7 @@ def plot_stress_tests_summary(window_data, noise_data):
       left  = DFT parameter sensitivity via window length / frequency resolution
       right = noise robustness via BPM error vs SNR
     """
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 9))
     fig.suptitle(
         "☣  DFT STRESS TESTS — Parameter Sensitivity and Noise Robustness",
         fontsize=13, color=COLORS["accent"]
@@ -248,7 +248,7 @@ def plot_dft_failure_case(failure_data):
     """
     ns = failure_data["nonstationarity"]
 
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 9))
     fig.suptitle(
         "☣  DFT LIMITATION — A Global Spectrum Can Hide Time Variation",
         fontsize=13, color=COLORS["accent"]
@@ -295,6 +295,3 @@ def plot_dft_failure_case(failure_data):
     plt.tight_layout(rect=[0, 0, 1, 0.92])
     _save(fig, "fig4_dft_failure_case.png")
     return fig
-
-
-

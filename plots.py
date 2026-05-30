@@ -34,16 +34,17 @@ LABELS = {
     "zombie": "BRADYCARDIA INVERSED/ZOMBIE",
 }
 
-ORDER = ["normal", "arrhythmia", "bradycardia"]
+ORDER = ["normal", 
+        "arrhythmia", #turning
+        "bradycardia", #zombie
+        ]
 
 FIG_DIR = os.path.join(os.path.dirname(__file__), "figures")
 os.makedirs(FIG_DIR, exist_ok=True)
 
-
 def _save(fig, name):
     path = os.path.join(FIG_DIR, name)
     fig.savefig(path, dpi=300, facecolor=fig.get_facecolor())
-    print(f"  ✓  saved {path}")
     return path
 
 def _one_sided_spectrum(x, fs):
@@ -52,7 +53,6 @@ def _one_sided_spectrum(x, fs):
     freqs = np.fft.fftfreq(N, d=1.0 / fs)
     half = N // 2
     return freqs[:half], np.abs(X[:half])
-
 
 ## Fig 1. Main result 
 # - noisy signal in grey
@@ -112,7 +112,6 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
 
     # Visual explanation regions. These are explanatory annotations; the exact
     # recovery parameters are implemented in dft_filter.py.
-
     ax.text(2, 0.72, "main ECG frequency content", color=COLORS["normal"], fontsize=8)
 
     ax.set_title(f"Example signal: {LABELS.get(example_label, example_label)}",
@@ -128,15 +127,9 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
     _save(fig, "fig2_dft_filter_explanation.png")
     return fig
 
-
 # Fig 3. Stress tests
 
 def plot_stress_tests_summary(window_data, noise_data):
-    """
-    Combined video figure for two required stress tests:
-      left  = DFT parameter sensitivity via window length / frequency resolution
-      right = noise robustness via BPM error vs SNR
-    """
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
     fig.suptitle(
         "STRESS TESTS — Parameter Sensitivity and Noise Robustness",
@@ -193,12 +186,10 @@ def plot_stress_tests_summary(window_data, noise_data):
     _save(fig, "fig3_stress_tests.png")
     return fig
 
-
 # Fig 4. Failure case
 
 def plot_dft_failure(failure_data):
     ns = failure_data["nonstationarity"]
-
     fig, axes = plt.subplots(1, 2, figsize=(16, 9))
     fig.suptitle(
         "DFT LIMITATION — A Global Spectrum Can Hide Time Variation",

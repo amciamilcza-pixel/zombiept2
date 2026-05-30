@@ -7,7 +7,7 @@ MITDB_DIR = "mitdb"     #MIT-BIH database with heartrates
 NOISE_DIR = "nstdb"     #MIT-BIH database with noise
 TARGET_FS = 500         #defines target sampling rate as 500 Hz
 
-#loads a 5 seconds of ECG segment from the MIT-BIH database
+#loads segment from the MIT-BIH database
 #skips first 5 s because in real recording the electrodes are settling so the signal is often noisy 
 def _load_record(record_id, duration=10.0, start_sec=5.0, channel=0):   
     #builds file path and reads it with wfdb 
@@ -40,13 +40,13 @@ def load_normal(duration=10.0):
     t, sig, _ = _load_record("100", duration=duration)
     return t, sig
 
-def load_bradycardia(duration=10.0):
-    t, sig, _ = _load_record("119", duration=duration)
-    return t, -sig
-
 def load_arrhytmia(duration=10.0):
     t, sig, _ = _load_record("203", duration=duration)
     return t, sig
+
+def load_bradycardia(duration=10.0):
+    t, sig, _ = _load_record("119", duration=duration)
+    return t, -sig
 
 #Loads a real noise signal from the MIT-BIH Noise Stress Test Database
 def _load_noise_record(name, n_samples, fs, seed=0):
@@ -76,21 +76,21 @@ def _load_noise_record(name, n_samples, fs, seed=0):
     return chunk
 
 #adds real noises to the heartbeat
-# bw - baseline wander
+# bd - breathing drift
 # em - electrode motion
-# ma - muscle artefact
+# ms - muscle static
 def add_real_noise(ecg, fs=500, snr_db=5, seed=99):
     N = len(ecg)
     t = np.arange(N) / fs
     sig_rms = np.sqrt(np.mean(ecg**2)) + 1e-10
 
 
-    bw = _load_noise_record("bw", N, fs, seed=seed)
+    bd = _load_noise_record("bd", N, fs, seed=seed)
     em = _load_noise_record("em", N, fs, seed=seed + 1)
-    ma = _load_noise_record("ma", N, fs, seed=seed + 2)
+    ms = _load_noise_record("ms", N, fs, seed=seed + 2)
 
     #combines the three noise types  
-    mixed_noise = 0.45 * bw + 0.35 * em + 0.20 * ma
+    mixed_noise = 0.45*bd + 0.35*em + 0.20*ms
     #calculates signal-to-noise ratio
     noise_rms_target = sig_rms / (10 ** (snr_db/20))
     mixed_noise = mixed_noise / (np.sqrt(np.mean(mixed_noise**2)) + 1e-10)
@@ -111,7 +111,7 @@ def add_noise(ecg, fs=500, snr_db=5, seed=99):
 
     noise_rms = sig_rms/(10 ** (snr_db / 20)) 
     white = rng.normal(0, noise_rms, N)         #white noise - pollutes whole spectrum uniformly
-    baseline_wander = 0.30 * sig_rms * np.sin(2 * np.pi * 0.20 * t)     
+    breathing_drift = 0.30 * sig_rms * np.sin(2 * np.pi * 0.20 * t)     
     hum = 0.25 * sig_rms * np.sin(2 * np.pi * 50 * t)
 
-    return ecg + white + baseline_wander + hum
+    return ecg + white + breathing_drift + hum

@@ -69,7 +69,7 @@ def noise_robustness(fs=500, duration=10.0, n_trials=5):
 
         results[name] = {
             "snr_levels": snr_levels,       #dB
-            "hr_snr": hr_snr,         #BPM    
+            "hr_snr": hr_snr,               #BPM    
             "hr_error": hr_error,           #BPM       
             "true_bpm": true_bpms[name],    #BPM
         }
@@ -79,7 +79,7 @@ def noise_robustness(fs=500, duration=10.0, n_trials=5):
 ## FAILURE CASE
 
 def failure_cases(fs=500):
-    t_arr, ecg_arr = load_infected(duration=10.0)      #Hz, seconds
+    t_arr, ecg_arr = load_arrhytmia(duration=10.0)      #Hz, seconds
     #DFT of the whole signal
     #rfft of a real signal of length N returns N//2+1 unique frequency bins
     stft_mag = np.zeros((win_len // 2 + 1, n_frames))

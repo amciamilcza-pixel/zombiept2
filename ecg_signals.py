@@ -84,13 +84,11 @@ def add_real_noise(ecg, fs=500, snr_db=5, seed=99):
     t = np.arange(N) / fs
     sig_rms = np.sqrt(np.mean(ecg**2)) + 1e-10
 
-    try:
-        bw = _load_noise_record("bw", N, fs, seed=seed)
-        em = _load_noise_record("em", N, fs, seed=seed + 1)
-        ma = _load_noise_record("ma", N, fs, seed=seed + 2)
-    except FileNotFoundError:
-        print("Noise files not found. Using synthetic noise.")
-        return add_noise(ecg, fs=fs, snr_db=snr_db, seed=seed)
+
+    bw = _load_noise_record("bw", N, fs, seed=seed)
+    em = _load_noise_record("em", N, fs, seed=seed + 1)
+    ma = _load_noise_record("ma", N, fs, seed=seed + 2)
+
     #combines the three noise types  
     mixed_noise = 0.45 * bw + 0.35 * em + 0.20 * ma
     #calculates signal-to-noise ratio

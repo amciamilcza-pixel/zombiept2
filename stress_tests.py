@@ -76,24 +76,22 @@ def noise_robustness(fs=500, duration=10.0, n_trials=5):
 
     return results
 
-## FAILURE CASE
+## FAILURE CASE - non-stationarity
 
 def failure_cases(fs=500):
-    t_arr, ecg_arr = load_arrhytmia(duration=10.0)      #Hz, seconds
+    t_arr, ecg_arr = load_arrhytmia(duration=10.0)
     #DFT of the whole signal
-    #rfft of a real signal of length N returns N//2+1 unique frequency bins
-    stft_mag = np.zeros((win_len // 2 + 1, n_frames))
-    freqs_global = np.fft.rfftfreq(len(ecg_arr), d=1/fs)     #Hz
+    freqs_global = np.fft.rfftfreq(len(ecg_arr), d=1/fs)
     mag_global = np.abs(np.fft.rfft(ecg_arr))
 
     ##STFT (Short-Time Fourier Transform)
     win_len = 256       #sets window length to 256
     hop = 64            #step size between consecutive windows
     n_frames = (len(ecg_arr) - win_len) // hop
-
-    stft_mag = np.zeros((win_len // 2 + 1, n_frames))     #amplitude, shape (freq_bins, frames)
-    stft_times = np.zeros(n_frames)             #seconds (centre time of each frame)
     hann_win = np.hanning(win_len)
+    #rfft of a real signal of length N returns N//2+1 unique frequency bins
+    stft_mag = np.zeros((win_len // 2 + 1, n_frames))
+    stft_times = np.zeros(n_frames)           
 
     for i in range(n_frames):
         start = i*hop                            
@@ -101,7 +99,7 @@ def failure_cases(fs=500):
         stft_mag[:, i] = np.abs(np.fft.rfft(frame))     #amplitude
         stft_times[i] = (start + win_len//2)/fs    #seconds
 
-    stft_freqs = np.fft.rfftfreq(win_len, d=1.0/fs)   #Hz
+    stft_freqs = np.fft.rfftfreq(win_len, d=1.0/fs)
 
     return {
         "nonstationarity": {

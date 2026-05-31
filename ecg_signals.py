@@ -75,22 +75,22 @@ def _load_noise_record(name, n_samples, fs, seed=0):
 
     return chunk
 
-#adds real noises to the heartbeat
-# bd - breathing drift
-# em - electrode motion
-# ms - muscle static
+#adds real noises to the heartbeat 
+# bw — baseline wander
+# em — electrode motion artifact
+# ma — muscle artifact
 def add_real_noise(ecg, fs=500, snr_db=5, seed=99):
     N = len(ecg)
     t = np.arange(N) / fs
     sig_rms = np.sqrt(np.mean(ecg**2)) + 1e-10
 
 
-    bd = _load_noise_record("bd", N, fs, seed=seed)
+    bw = _load_noise_record("bw", N, fs, seed=seed)
     em = _load_noise_record("em", N, fs, seed=seed + 1)
-    ms = _load_noise_record("ms", N, fs, seed=seed + 2)
+    ma = _load_noise_record("ma", N, fs, seed=seed + 2)
 
     #combines the three noise types  
-    mixed_noise = 0.45*bd + 0.35*em + 0.20*ms
+    mixed_noise = 0.45*bw + 0.35*em + 0.20*ma
     #calculates signal-to-noise ratio
     noise_rms_target = sig_rms / (10 ** (snr_db/20))
     mixed_noise = mixed_noise / (np.sqrt(np.mean(mixed_noise**2)) + 1e-10)
@@ -111,7 +111,7 @@ def add_noise(ecg, fs=500, snr_db=5, seed=99):
 
     noise_rms = sig_rms/(10 ** (snr_db / 20)) 
     white = rng.normal(0, noise_rms, N)         #white noise - pollutes whole spectrum uniformly
-    breathing_drift = 0.30 * sig_rms * np.sin(2 * np.pi * 0.20 * t)     
+    baseline_wander = 0.30 * sig_rms * np.sin(2 * np.pi * 0.20 * t)     
     hum = 0.25 * sig_rms * np.sin(2 * np.pi * 50 * t)
 
-    return ecg + white + breathing_drift + hum
+    return ecg + white + baseline_wander + hum

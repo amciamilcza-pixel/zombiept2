@@ -4,11 +4,9 @@ import numpy as np
 def spectral_magnitude(signal, fs):
     # Converts ECG signal in frequency domain (X contains complex values - how much of each frequency is present
     N = len(signal)
-    X = np.fft.fft(signal)        
-    freqs = np.fft.fftfreq(N, d=1/fs)       # Creates matching frequency values
-
-    half = N//2
-    return freqs[:half], np.abs(X[:half]), X # Return only the positive frequencies for plotting, and the full DFT
+    X_full = np.fft.rfft(signal)        
+    freqs = np.fft.rfftfreq(N, d=1/fs)       # Creates matching frequency values
+    return freqs, np.abs(X_full), X_full # Return only the positive frequencies for plotting, and the full DFT
 
 #Keep only frequencies within the useful ECG range (between f_low and f_high)
 def dft_bandpass(signal, fs, f_low=0.5, f_high=45):

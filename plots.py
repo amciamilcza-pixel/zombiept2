@@ -129,7 +129,7 @@ def plot_dft_filter_explanation(freqs, X_noisy, X_recovered,
 
 # Fig 3. Stress tests
 
-def plot_stress_tests_summary(window_data, noise_data):
+def plot_stress_tests(window_data, noise_data):
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
     fig.suptitle(
         "STRESS TESTS — Parameter Sensitivity and Noise Robustness",

@@ -84,15 +84,10 @@ plot_dft_failure(failure_data)
 expected_figures = [
     "fig1_main_noisy_vs_recovered.png",
     "fig2_dft_filter_explanation.png",
-    "fig3_stress_tests_.png",
+    "fig3_stress_tests.png",
     "fig4_dft_failure.png",
 ]
 
 # Creates full path to each figure
 for fig_name in expected_figures:
     fig_path = os.path.join(FIG_DIR, fig_name)
-
-    if os.path.exists(fig_path):
-        print(f"YES, {fig_name} created")
-    else:
-        print(f"NO, {fig_name} missing")

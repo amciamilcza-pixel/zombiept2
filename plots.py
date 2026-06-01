@@ -30,8 +30,8 @@ COLORS = {
 
 LABELS = {
     "normal": "NORMAL",
-    "turning": "ARRHYTHMIA/TURNING",
-    "zombie": "BRADYCARDIA INVERSED/ZOMBIE",
+    "arrhythmia": "ARRHYTHMIA/TURNING",
+    "bradycardia": "BRADYCARDIA INVERSED/ZOMBIE",
 }
 
 ORDER = ["normal", 

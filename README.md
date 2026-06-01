@@ -25,6 +25,13 @@ They are from MIT-BIH Noise Stress Test Database:
 - 'em' — electrode motion artifact
 - 'ma' — muscle artifact
 
+Fallback noise
+The project is designed to use real noise recordings from the MIT-BIH Noise Stress Test Database. However, a synthetic fallback noise generator is included in case the database files cannot be loaded. The fallbakc adds 
+- white Gaussian noise
+- low-frequency baseline 
+- 50Hz power-line interference hum
+The noise strength is adjusted to the chosen signal to noise ratio (SNR), and a fixed seed is used so results stay the same between runs. This keeps the DFT filtering and BPM estimation working, but the synthetic noise is simpler than real ECG noise, so the MIT-BIH recordings are preferred whenever available.
+
 ## How to run
 
 Requirements:

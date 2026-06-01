@@ -42,12 +42,12 @@ def load_normal(duration=10.0):
     return t, sig
 
 def load_arrhytmia(duration=10.0):
-    t, sig, _ = _load_record("203", duration=duration)
-    return t, sig
-
-def load_bradycardia(duration=10.0):
     t, sig, _ = _load_record("119", duration=duration)
     return t, -sig
+
+def load_bradycardia(duration=10.0):
+    t, sig, _ = _load_record("203", duration=duration)
+    return t, sig
 
 #Loads a real noise signal from the MIT-BIH Noise Stress Test Database
 def _load_noise_record(name, n_samples, fs, seed=0):

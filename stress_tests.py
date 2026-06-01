@@ -1,6 +1,6 @@
 import numpy as np
 
-from ecg_signals import (load_normal, load_bradycardia, load_arrhytmia, add_noise,)
+from ecg_signals import (load_normal, load_bradycardia, load_arrhytmia, add_real_noise,)
 from dft_filter import heart_rate_dft, spectral_magnitude, dft_bandpass
 
 ## PARAMETER SENSITIVITY - observation window length
@@ -38,14 +38,14 @@ def window_sensitivity(fs=500, duration=10.0):
 def noise_robustness(fs=500, duration=10.0, n_trials=5):
     snr_levels = np.linspace(-5, 30, 15)         #dB
     true_bpms = {
-        "normal": 75.0,         #mean BPM of record 100
-        "zombie": 48.0,         #mean BPM of record 119
-        "turning": 88.0,        #mean BPM of record 203
+        "normal":      75.0,    #mean BPM of record 100
+        "bradycardia": 48.0,    #mean BPM of record 119
+        "arrhythmia":  88.0,    #mean BPM of record 203
     }
     generators = {
-        "normal":load_normal,
-        "zombie":load_bradycardia,
-        "turning":load_arrhytmia,
+        "normal":      load_normal,
+        "bradycardia": load_bradycardia,
+        "arrhythmia":  load_arrhytmia,
     }
     results = {}
 
@@ -58,7 +58,7 @@ def noise_robustness(fs=500, duration=10.0, n_trials=5):
             #takes an average over multiple noise seeds for stable estimates
             hrs = []
             for seed in range(n_trials):
-                noisy = add_noise(ecg_clean, fs, snr_db=snr, seed=seed*17)      #Hz, dB
+                noisy = add_real_noise(ecg_clean, fs, snr_db=snr, seed=seed*17)  #Hz, dB
                 #applies bandpass and estimates BPM 
                 recovered, _, _ = dft_bandpass(noisy, fs, f_low=0.5, f_high=45.0)   #Hz, Hz, Hz
                 hrs.append(heart_rate_dft(recovered, fs))      #BPM, Hz

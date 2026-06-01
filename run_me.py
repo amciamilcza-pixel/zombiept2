@@ -12,10 +12,13 @@ SNR_DB = 5
 FIG_DIR = "figures"
 os.makedirs(FIG_DIR, exist_ok=True)
 
-# Remove old output files 
+# Remove old output files
 for filename in os.listdir(FIG_DIR):
     if filename.endswith(".png"):
-        os.remove(os.path.join(FIG_DIR, filename))
+        try:
+            os.remove(os.path.join(FIG_DIR, filename))
+        except OSError:
+            pass
 
 # Load the three ECG signals - normal, turning (arrhythmia) and zombie (bradycardia)
 t, ecg_normal = load_normal(duration=DURATION)

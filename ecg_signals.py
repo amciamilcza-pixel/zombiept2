@@ -3,8 +3,9 @@ import numpy as np
 import wfdb         #PhysioNet library that reads MIT-BIH files (.dat and .hea)
                     #raw signal from .dat , sample rate and units from .hea
 
-MITDB_DIR = "mitdb"     #MIT-BIH database with heartrates
-NOISE_DIR = "nstdb"     #MIT-BIH database with noise
+_HERE = os.path.dirname(os.path.abspath(__file__))
+MITDB_DIR = os.path.join(_HERE, "mitdb")   #MIT-BIH database with heartrates
+NOISE_DIR = os.path.join(_HERE, "nstdb")   #MIT-BIH database with noise
 TARGET_FS = 500         #defines target sampling rate as 500 Hz
 
 #loads segment from the MIT-BIH database
@@ -68,6 +69,7 @@ def _load_noise_record(name, n_samples, fs, seed=0):
     rng = np.random.default_rng(seed)
     start = rng.integers(0, len(raw_rs) - n_samples)
     chunk = raw_rs[start:start + n_samples]
+    chunk = np.nan_to_num(chunk, nan=0.0)
 
     #removes offset and scales noise to 1.0 amplitude
     chunk = chunk - np.mean(chunk)

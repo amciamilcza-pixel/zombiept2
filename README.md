@@ -2,10 +2,13 @@
 
 Real ECG recordings are always contaminated by noise: breathing drift, electrode motion, muscle interference and hum. 
 This project:
-- demonstrates how the Discrete Fourier Transform (DFT) can be used to analyse and recover clean ECG signal - DFT converts theECG     signal from the time domain into the frequency domain, which makes it possible to identify frequency components that belong to the heartbeat and components that are likely noise, 
+- demonstrates how the Discrete Fourier Transform (DFT) can be used to analyse and recover clean ECG signal - DFT converts the ECG    signal from the time domain into the frequency domain, which makes it possible to identify frequency components that belong to the heartbeat and components that are likely noise, 
 - estimates heart rate by identifying the dominant frequency in the 0.5 – 3.5 Hz band of the DFT magnitude spectrum.
 
  A fictional “zombie apocalypse” scenario is introduced for entertainmnet purpose of the video. The “zombie” and “infected” labels are creative presentation labels. However, the underlying ECG recordings are real clinical ECG signals from the MIT-BIH Arrhythmia Database.
+
+ # Note: 
+ Since database ECG records do not contain any disruptive noises they are first added by us to be then filtered out by DFT. The noise signals are not generated or created by us. They were obtained from a publicly available real-world ECG noise database and incorporated into the project. 
 
 ## License / Data used 
 MIT-BIH datasets belong to PhysioNet: https://physionet.org/

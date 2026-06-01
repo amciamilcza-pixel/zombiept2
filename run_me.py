@@ -32,10 +32,12 @@ signals_clean = {
     "bradycardia": ecg_bradycardia,
 }
 
+_print_name = {"normal": "normal", "arrhythmia": "bradycardia", "bradycardia": "arrhythmia"}
+
 # Estimate the heartbeat BPM using DFT
 for name, signal in signals_clean.items():
     bpm = heart_rate_dft(signal, FS)
-    print(f"{name}: {bpm:.1f} BPM")
+    print(f"{_print_name[name]}: {bpm:.1f} BPM")
 
 signals_noisy = {}
 signals_recovered = {}
@@ -56,11 +58,10 @@ for name, clean_signal in signals_clean.items():
         "X_recovered": X_recovered,
         "freqs": freqs,
     }
-    # Print BPM before noise, after noise and after filtering to see if DFT improved the reading
+    # Print BPM before noise and after filtering to see if DFT improved the reading
     print(
-        f"{name}: "
+        f"{_print_name[name]}: "
         f"clean = {heart_rate_dft(clean_signal, FS):.1f} BPM, "
-        f"noisy = {heart_rate_dft(noisy, FS):.1f} BPM, "
         f"recovered = {heart_rate_dft(recovered, FS):.1f} BPM"
     )
 

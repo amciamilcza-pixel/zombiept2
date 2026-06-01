@@ -71,6 +71,9 @@ def _load_noise_record(name, n_samples, fs, seed=0):
     chunk = raw_rs[start:start + n_samples]
     chunk = np.nan_to_num(chunk, nan=0.0)
 
+    #replace any NaN values (gaps in the recording) with 0
+    chunk = np.nan_to_num(chunk, nan=0.0)
+
     #removes offset and scales noise to 1.0 amplitude
     chunk = chunk - np.mean(chunk)
     chunk = chunk/(np.sqrt(np.mean(chunk**2)) + 1e-10)
